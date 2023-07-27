@@ -1,1 +1,1 @@
-DROP TABLE trends;
+DROP TABLE trending_repositories;

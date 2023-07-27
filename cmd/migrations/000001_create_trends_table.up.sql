@@ -1,7 +1,8 @@
-CREATE TABLE trends (
+CREATE TABLE trending_repositories (
     `id` int NOT NULL AUTO_INCREMENT,
-    `repo_full_name` varchar(255) NOT NULL,
-    `language` varchar(255) NOT NULL,
+    `full_name` varchar(255) NOT NULL,
+    `language` varchar(255) DEFAULT NULL,
+    `rank` int NOT NULL,
     `scraped_at` datetime NOT NULL,,
     `trend_date` date NOT NULL,
     PRIMARY KEY (`id`)
