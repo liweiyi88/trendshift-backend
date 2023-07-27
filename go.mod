@@ -6,7 +6,9 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/gocolly/colly/v2 v2.1.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
+	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cobra v1.7.0
+	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
 
 require (

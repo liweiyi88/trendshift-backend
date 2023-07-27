@@ -19,7 +19,7 @@ var dsn string
 
 func init() {
 	rootCmd.AddCommand(migrateCmd)
-	migrateCmd.Flags().StringVarP(&dsn, "dsn", "d", "mysql://root@tcp(localhost:3306)/gti", "the database connection dsn")
+	migrateCmd.Flags().StringVarP(&dsn, "dsn", "d", "mysql://root@tcp(localhost:3306)/gti?parseTime=true", "the database connection dsn")
 }
 
 var migrateCmd = &cobra.Command{

@@ -2,24 +2,54 @@ package scraper
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gocolly/colly/v2"
+	"github.com/liweiyi88/gti/internal/database"
 )
 
-func Scrape(url string) {
+const ghTrendScrapePath = ".Box-row .h3.lh-condensed a[href]"
+const ghTrendScrapeBaseURL = "https://github.com/trending"
+
+type GhTrendScraper struct {
+	url, path string
+	db        database.DB
+}
+
+func NewGhTrendScraper() *GhTrendScraper {
+	return &GhTrendScraper{
+		url:  ghTrendScrapeBaseURL,
+		path: ghTrendScrapePath,
+		db:   database.GetInstance(),
+	}
+}
+
+func (gh *GhTrendScraper) Scrape() {
 	c := colly.NewCollector()
 
-	// On every a element which has href attribute call callback
-	c.OnHTML(".Box-row .h3.lh-condensed a[href]", func(e *colly.HTMLElement) {
+	repos := make([]string, 0)
+
+	c.OnHTML(gh.path, func(e *colly.HTMLElement) {
 		link := e.Attr("href")
-		// Print link
-		fmt.Printf("Link: %s\n", link)
+
+		if strings.HasPrefix(link, "/") {
+			link = strings.TrimLeft(link, "/")
+		}
+
+		repos = append(repos, link)
 	})
 
-	// Before making a request print "Visiting ..."
 	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL.String())
+		fmt.Printf("scraping: %s \n", r.URL.String())
 	})
 
-	c.Visit(url)
+	c.Visit(gh.url)
+
+	// select today's trend and sort by rank
+
+	for _, repo := range repos {
+
+	}
+
+	// save trends in DB
 }
