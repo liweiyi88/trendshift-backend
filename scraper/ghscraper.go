@@ -49,15 +49,18 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 	c.Visit(gh.getTrendPageUrl(language))
 
 	now := time.Now()
-	rankedTrends, err := gh.trendRepo.FindRankedTrendsByDate(ctx, now)
+	rankedTrends, err := gh.trendRepo.FindRankedTrendsByDate(ctx, now, language)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to retrieve ranked trending repositoris: %v", err)
 	}
 
 	for index, repo := range repos {
 		rank := index + 1
 
-		if rankedTrend, ok := rankedTrends[rank]; ok && rankedTrend.RepoFullName != "" {
+		rankedTrend, ok := rankedTrends[rank]
+
+		if ok && rankedTrend.RepoFullName != "" {
 			// if trend exist， do update.
 			rankedTrend.RepoFullName = repo
 			rankedTrend.ScrapedAt, rankedTrend.TrendDate = now, now

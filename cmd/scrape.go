@@ -20,9 +20,6 @@ import (
 
 func init() {
 	rootCmd.AddCommand(scrapeCmd)
-	scrapeCmd.MarkFlagRequired("interval")
-	scrapeCmd.Flags().StringVarP(&queueUrl, "queueUrl", "q", "", "the queue url that we dispatch jobs to.")
-	scrapeCmd.MarkFlagRequired("queueUrl")
 }
 
 var scrapeCmd = &cobra.Command{

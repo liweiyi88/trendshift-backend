@@ -2,7 +2,9 @@ package trend
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/liweiyi88/gti/database"
@@ -20,8 +22,20 @@ func NewTrendingRepositoryRepo(db database.DB) *TrendingRepositoryRepo {
 	}
 }
 
-func (tr *TrendingRepositoryRepo) FindRankedTrendsByDate(ctx context.Context, date time.Time) (RankedTrendingRepository, error) {
-	rows, err := tr.db.QueryContext(ctx, "SELECT * FROM album WHERE trend_date = ?", date.Format("2006-01-02"))
+func (tr *TrendingRepositoryRepo) FindRankedTrendsByDate(ctx context.Context, date time.Time, language string) (RankedTrendingRepository, error) {
+	lang := sql.NullString{
+		String: strings.TrimSpace(language),
+		Valid:  true,
+	}
+
+	if strings.TrimSpace(language) == "" {
+		lang = sql.NullString{
+			String: "",
+			Valid:  false,
+		}
+	}
+
+	rows, err := tr.db.QueryContext(ctx, "SELECT * FROM trending_repositories WHERE trend_date = ? AND language = ?", date.Format("2006-01-02"), lang)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +47,7 @@ func (tr *TrendingRepositoryRepo) FindRankedTrendsByDate(ctx context.Context, da
 	for rows.Next() {
 		var trend TrendingRepository
 
-		if err := rows.Scan(&trend.Id, &trend.RepoFullName, &trend.Language, &trend.ScrapedAt, &trend.TrendDate); err != nil {
+		if err := rows.Scan(&trend.Id, &trend.RepoFullName, &trend.Language, &trend.Rank, &trend.ScrapedAt, &trend.TrendDate); err != nil {
 			return rankedTrends, err
 		}
 
