@@ -7,8 +7,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var queueUrl string
-
 var rootCmd = &cobra.Command{}
 
 func Execute() {

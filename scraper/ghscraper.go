@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -80,6 +81,11 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 					String: strings.ToLower(language),
 					Valid:  true,
 				}
+			} else {
+				trend.Language = sql.NullString{
+					String: "",
+					Valid:  false,
+				}
 			}
 
 			gh.trendRepo.Save(ctx, trend)
@@ -93,7 +99,7 @@ func (gh *GhTrendScraper) getTrendPageUrl(language string) string {
 	language = strings.TrimSpace(language)
 
 	if language != "" {
-		return fmt.Sprintf("%s/%s?since=daily", gh.url, language)
+		return fmt.Sprintf("%s/%s?since=daily", gh.url, url.QueryEscape(language))
 	}
 
 	return gh.url

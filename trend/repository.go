@@ -12,6 +12,7 @@ type TrendingRepository struct {
 	Rank         int
 	ScrapedAt    time.Time
 	TrendDate    time.Time
+	RepositoryId sql.NullInt64
 }
 
 func NewTrendingRepository() *TrendingRepository {

@@ -2,7 +2,6 @@ package trend
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -23,19 +22,18 @@ func NewTrendingRepositoryRepo(db database.DB) *TrendingRepositoryRepo {
 }
 
 func (tr *TrendingRepositoryRepo) FindRankedTrendsByDate(ctx context.Context, date time.Time, language string) (RankedTrendingRepository, error) {
-	lang := sql.NullString{
-		String: strings.TrimSpace(language),
-		Valid:  true,
+	lang := strings.TrimSpace(language)
+
+	query := "SELECT * FROM trending_repositories WHERE trend_date = ? AND language is null"
+	args := []any{date.Format("2006-01-02")}
+
+	if lang != "" {
+		query = "SELECT * FROM trending_repositories WHERE trend_date = ? AND language = ?"
+		args = append(args, lang)
 	}
 
-	if strings.TrimSpace(language) == "" {
-		lang = sql.NullString{
-			String: "",
-			Valid:  false,
-		}
-	}
+	rows, err := tr.db.QueryContext(ctx, query, args...)
 
-	rows, err := tr.db.QueryContext(ctx, "SELECT * FROM trending_repositories WHERE trend_date = ? AND language = ?", date.Format("2006-01-02"), lang)
 	if err != nil {
 		return nil, err
 	}
@@ -45,13 +43,13 @@ func (tr *TrendingRepositoryRepo) FindRankedTrendsByDate(ctx context.Context, da
 	rankedTrends := make(map[int]TrendingRepository, 0)
 
 	for rows.Next() {
-		var trend TrendingRepository
+		var tr TrendingRepository
 
-		if err := rows.Scan(&trend.Id, &trend.RepoFullName, &trend.Language, &trend.Rank, &trend.ScrapedAt, &trend.TrendDate); err != nil {
+		if err := rows.Scan(&tr.Id, &tr.RepoFullName, &tr.Language, &tr.Rank, &tr.ScrapedAt, &tr.TrendDate, &tr.RepositoryId); err != nil {
 			return rankedTrends, err
 		}
 
-		rankedTrends[trend.Rank] = trend
+		rankedTrends[tr.Rank] = tr
 	}
 
 	if err = rows.Err(); err != nil {
