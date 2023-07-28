@@ -14,6 +14,6 @@ type TrendingRepository struct {
 	TrendDate    time.Time
 }
 
-func NewTrend() *TrendingRepository {
+func NewTrendingRepository() *TrendingRepository {
 	return &TrendingRepository{}
 }

@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
-	"github.com/liweiyi88/gti/internal/database"
-	"github.com/liweiyi88/gti/internal/trend"
+	"github.com/liweiyi88/gti/trend"
 )
 
 const ghTrendScrapePath = ".Box-row .h3.lh-condensed a[href]"
@@ -17,7 +16,6 @@ const ghTrendScrapeBaseURL = "https://github.com/trending"
 
 type GhTrendScraper struct {
 	url, path string
-	db        database.DB
 	trendRepo *trend.TrendingRepositoryRepo
 }
 
@@ -25,12 +23,11 @@ func NewGhTrendScraper(trendRepo *trend.TrendingRepositoryRepo) *GhTrendScraper 
 	return &GhTrendScraper{
 		url:       ghTrendScrapeBaseURL,
 		path:      ghTrendScrapePath,
-		db:        database.GetInstance(),
 		trendRepo: trendRepo,
 	}
 }
 
-func (gh *GhTrendScraper) Scrape(language string) error {
+func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 	c := colly.NewCollector()
 
 	repos := make([]string, 0)
@@ -52,7 +49,7 @@ func (gh *GhTrendScraper) Scrape(language string) error {
 	c.Visit(gh.getTrendPageUrl(language))
 
 	now := time.Now()
-	rankedTrends, err := gh.trendRepo.FindRankedTrendsByDate(context.Background(), now)
+	rankedTrends, err := gh.trendRepo.FindRankedTrendsByDate(ctx, now)
 	if err != nil {
 		return err
 	}
@@ -65,7 +62,7 @@ func (gh *GhTrendScraper) Scrape(language string) error {
 			rankedTrend.RepoFullName = repo
 			rankedTrend.ScrapedAt, rankedTrend.TrendDate = now, now
 
-			gh.trendRepo.Update(context.Background(), rankedTrend)
+			gh.trendRepo.Update(ctx, rankedTrend)
 		} else {
 			// trend does not exist, do insert.
 			trend := trend.TrendingRepository{
@@ -82,7 +79,7 @@ func (gh *GhTrendScraper) Scrape(language string) error {
 				}
 			}
 
-			gh.trendRepo.Save(context.Background(), trend)
+			gh.trendRepo.Save(ctx, trend)
 		}
 	}
 
@@ -93,7 +90,7 @@ func (gh *GhTrendScraper) getTrendPageUrl(language string) string {
 	language = strings.TrimSpace(language)
 
 	if language != "" {
-		return fmt.Sprintf("%s/%s", gh.url, language)
+		return fmt.Sprintf("%s/%s?since=daily", gh.url, language)
 	}
 
 	return gh.url
