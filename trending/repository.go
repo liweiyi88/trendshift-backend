@@ -14,7 +14,3 @@ type TrendingRepository struct {
 	TrendDate    time.Time
 	RepositoryId sql.NullInt64
 }
-
-func NewTrendingRepository() *TrendingRepository {
-	return &TrendingRepository{}
-}

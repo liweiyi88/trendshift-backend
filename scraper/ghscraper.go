@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
-	"github.com/liweiyi88/gti/trend"
+	"github.com/liweiyi88/gti/trending"
 )
 
 const ghTrendScrapePath = ".Box-row .h3.lh-condensed a[href]"
@@ -62,13 +62,13 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 		rankedTrend, ok := rankedTrends[rank]
 
 		if ok && rankedTrend.RepoFullName != "" {
-			// if trend exist， do update.
+			// if trending repo exist, do update.
 			rankedTrend.RepoFullName = repo
 			rankedTrend.ScrapedAt, rankedTrend.TrendDate = now, now
 
 			gh.trendRepo.Update(ctx, rankedTrend)
 		} else {
-			// trend does not exist, do insert.
+			// trending repo does not exist, do insert.
 			trend := trend.TrendingRepository{
 				RepoFullName: repo,
 				ScrapedAt:    now,

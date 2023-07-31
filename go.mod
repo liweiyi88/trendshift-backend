@@ -29,6 +29,7 @@ require (
 	github.com/temoto/robotstxt v1.1.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/sync v0.3.0
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect

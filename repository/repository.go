@@ -2,7 +2,7 @@ package repository
 
 import (
 	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/trend"
+	"github.com/liweiyi88/gti/trending"
 )
 
 type Repositories struct {

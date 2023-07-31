@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -16,6 +15,7 @@ import (
 	"github.com/liweiyi88/gti/scraper"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
+	"golang.org/x/sync/errgroup"
 )
 
 func init() {
@@ -24,7 +24,7 @@ func init() {
 
 var scrapeCmd = &cobra.Command{
 	Use:   "scrape",
-	Short: "Scrape the trending information form GitHub trending page.",
+	Short: "Scrape the trending repositories form GitHub trending page.",
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Init()
 
@@ -54,22 +54,17 @@ var scrapeCmd = &cobra.Command{
 
 		languageToScrape := []string{"", "javascript", "python", "Go", "java", "php", "c++", "c", "typescript", "ruby", "c#", "rust"}
 
-		var wg sync.WaitGroup
-
-		wg.Add(len(languageToScrape))
+		group, ctx := errgroup.WithContext(ctx)
 
 		for _, language := range languageToScrape {
-			go func(ctx context.Context, language string) {
-				defer wg.Done()
-
-				err := scraper.Scrape(ctx, language)
-
-				if err != nil {
-					log.Fatalf("failed to scrape: %v", err)
-				}
-			}(ctx, language)
+			language := language
+			group.Go(func() error {
+				return scraper.Scrape(ctx, language)
+			})
 		}
 
-		wg.Wait()
+		if err := group.Wait(); err != nil {
+			log.Fatalf("failed to scrape trending page: %v", err)
+		}
 	},
 }
