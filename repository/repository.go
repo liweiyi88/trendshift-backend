@@ -2,17 +2,18 @@ package repository
 
 import (
 	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/github"
+	trend "github.com/liweiyi88/gti/trending"
 )
 
 type Repositories struct {
 	TrendingRepositoryRepo *trend.TrendingRepositoryRepo
+	GhRepositoryRepo       *github.GhRepositoryRepo
 }
 
 func InitRepositories(db database.DB) *Repositories {
-	trendingRepositoryRepo := trend.NewTrendingRepositoryRepo(db)
-
 	return &Repositories{
-		TrendingRepositoryRepo: trendingRepositoryRepo,
+		TrendingRepositoryRepo: trend.NewTrendingRepositoryRepo(db),
+		GhRepositoryRepo:       github.NewGhRepositoryRepo(db),
 	}
 }
