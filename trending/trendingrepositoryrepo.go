@@ -92,10 +92,16 @@ func (tr *TrendingRepositoryRepo) FindRankedTrendingRepoByDate(ctx context.Conte
 	return rankedTrends, nil
 }
 
-func (tr *TrendingRepositoryRepo) Save(ctx context.Context, trend TrendingRepository) error {
+func (tr *TrendingRepositoryRepo) Save(ctx context.Context, trendingRepository TrendingRepository) error {
 	query := "INSERT INTO `trending_repositories` (`full_name`, `language`, `rank`, `scraped_at`, `trend_date`) VALUES (?, ?, ?, ?, ?)"
 
-	result, err := tr.db.ExecContext(ctx, query, trend.RepoFullName, trend.Language, trend.Rank, trend.ScrapedAt.Format("2006-01-02 15:04:05"), trend.TrendDate.Format("2006-01-02"))
+	scrapeAt := time.Now()
+
+	if !trendingRepository.ScrapedAt.IsZero() {
+		scrapeAt = trendingRepository.ScrapedAt
+	}
+
+	result, err := tr.db.ExecContext(ctx, query, trendingRepository.RepoFullName, trendingRepository.Language, trendingRepository.Rank, scrapeAt.Format("2006-01-02 15:04:05"), trendingRepository.TrendDate.Format("2006-01-02"))
 
 	if err != nil {
 		return fmt.Errorf("failed to exec insert trending_repositories query to db, error: %v", err)
