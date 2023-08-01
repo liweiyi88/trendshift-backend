@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
-	trend "github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/trending"
 )
 
 const ghTrendScrapePath = ".Box-row .h3.lh-condensed a[href]"
@@ -17,10 +17,10 @@ const ghTrendScrapeBaseURL = "https://github.com/trending"
 
 type GhTrendScraper struct {
 	url, path string
-	trendRepo *trend.TrendingRepositoryRepo
+	trendRepo *trending.TrendingRepositoryRepo
 }
 
-func NewGhTrendScraper(trendRepo *trend.TrendingRepositoryRepo) *GhTrendScraper {
+func NewGhTrendScraper(trendRepo *trending.TrendingRepositoryRepo) *GhTrendScraper {
 	return &GhTrendScraper{
 		url:       ghTrendScrapeBaseURL,
 		path:      ghTrendScrapePath,
@@ -44,7 +44,7 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 	})
 
 	c.OnRequest(func(r *colly.Request) {
-		fmt.Printf("scraping: %s \n", r.URL.String())
+		// fmt.Printf("scraping: %s \n", r.URL.String())
 	})
 
 	c.Visit(gh.getTrendPageUrl(language))
@@ -59,17 +59,17 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 	for index, repo := range repos {
 		rank := index + 1
 
-		rankedTrend, ok := rankedTrendingRepo[rank]
+		trendingRepo, ok := rankedTrendingRepo[rank]
 
-		if ok && rankedTrend.RepoFullName != "" {
+		if ok && trendingRepo.RepoFullName != "" {
 			// if trending repo exist, do update.
-			rankedTrend.RepoFullName = repo
-			rankedTrend.ScrapedAt, rankedTrend.TrendDate = now, now
+			trendingRepo.RepoFullName = repo
+			trendingRepo.ScrapedAt, trendingRepo.TrendDate = now, now
 
-			gh.trendRepo.Update(ctx, rankedTrend)
+			gh.trendRepo.Update(ctx, trendingRepo)
 		} else {
 			// trending repo does not exist, do insert.
-			trendingRepository := trend.TrendingRepository{
+			trendingRepo := trending.TrendingRepository{
 				RepoFullName: repo,
 				ScrapedAt:    now,
 				TrendDate:    now,
@@ -77,18 +77,18 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 			}
 
 			if language != "" {
-				trendingRepository.Language = sql.NullString{
+				trendingRepo.Language = sql.NullString{
 					String: strings.ToLower(language),
 					Valid:  true,
 				}
 			} else {
-				trendingRepository.Language = sql.NullString{
+				trendingRepo.Language = sql.NullString{
 					String: "",
 					Valid:  false,
 				}
 			}
 
-			err = gh.trendRepo.Save(ctx, trendingRepository)
+			err = gh.trendRepo.Save(ctx, trendingRepo)
 		}
 	}
 

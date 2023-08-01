@@ -8,27 +8,35 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/liweiyi88/gti/trending"
 	"golang.org/x/exp/slog"
 )
 
-// Fetch github repo details via REST api and store the result in DB.
-type Fetcher struct {
-	Token            string // the personal acesss token, if set, the common rate limit is 5000 req/hour, otherwise, it will be 60 req/hour.
-	GhRepositoryRepo GhRepositoryRepo
+// GitHub rest api client
+type Client struct {
+	Token string // the personal acesss token, if set, the common rate limit is 5000 req/hour, otherwise, it will be 60 req/hour.
 }
 
-func (f *Fetcher) FetchRepository(ctx context.Context, fullName string) (GhRepository, error) {
+func NewClient(token string) *Client {
+	return &Client{
+		Token: token,
+	}
+}
+
+func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (trending.GhRepository, error) {
 	url := fmt.Sprintf("%s/%s", "https://api.github.com/repos", fullName)
 
-	var ghRepository GhRepository
+	var ghRepository trending.GhRepository
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return ghRepository, err
 	}
 
-	if strings.TrimSpace(f.Token) != "" {
-		req.Header.Set("Authorization: Bearer", f.Token)
+	req.Header.Set("Accept", "application/vnd.github+json")
+
+	if strings.TrimSpace(ghClient.Token) != "" {
+		req.Header.Set("Authorization", "Bearer "+ghClient.Token)
 	}
 
 	client := &http.Client{}

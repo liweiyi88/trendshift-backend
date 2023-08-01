@@ -1,4 +1,4 @@
-package trend
+package trending
 
 import (
 	"database/sql"

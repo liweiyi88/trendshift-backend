@@ -1,4 +1,4 @@
-package trend
+package trending
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func NewTrendingRepositoryRepo(db database.DB) *TrendingRepositoryRepo {
 	}
 }
 
-// Get all unique repositories' full name when there is no repository_id set in the table.
+// Get all repositories' full name when there is no repository_id set in the table.
 func (tr *TrendingRepositoryRepo) FindUnlinkedRepositories(ctx context.Context) ([]string, error) {
 	query := "select `full_name` from `trending_repositories` where `repository_id` is null group by `full_name`"
 
@@ -110,19 +110,38 @@ func (tr *TrendingRepositoryRepo) Save(ctx context.Context, trend TrendingReposi
 	return nil
 }
 
-func (tr *TrendingRepositoryRepo) Update(ctx context.Context, trend TrendingRepository) error {
+func (tr *TrendingRepositoryRepo) Update(ctx context.Context, trendingRepository TrendingRepository) error {
 	query := "UPDATE `trending_repositories` SET full_name = ?, rank = ?, language = ?, scraped_at = ?, trend_date = ? WHERE id = ?"
 
-	result, err := tr.db.ExecContext(ctx, query, trend.RepoFullName, trend.Rank, trend.Language, trend.ScrapedAt.Format("2006-01-02 15:04:05"), trend.TrendDate.Format("2006-01-02"), trend.Id)
+	result, err := tr.db.ExecContext(ctx, query, trendingRepository.RepoFullName, trendingRepository.Rank, trendingRepository.Language, trendingRepository.ScrapedAt.Format("2006-01-02 15:04:05"), trendingRepository.TrendDate.Format("2006-01-02"), trendingRepository.Id)
 
 	if err != nil {
-		return fmt.Errorf("failed to run trending_repositories update query, trend id: %d, error: %v", trend.Id, err)
+		return fmt.Errorf("failed to run trending_repositories update query, trending repository id: %d, error: %v", trendingRepository.Id, err)
 	}
 
 	_, err = result.RowsAffected()
 
 	if err != nil {
 		return fmt.Errorf("trending_repositories update rows affected returns error: %v", err)
+	}
+
+	return nil
+}
+
+// Save the relation between trending repositories and repositories.
+func (tr *TrendingRepositoryRepo) LinkRepository(ctx context.Context, repository GhRepository) error {
+	query := "UPDATE `trending_repositories` SET repository_id =? WHERE full_name = ?"
+
+	result, err := tr.db.ExecContext(ctx, query, repository.Id, repository.FullName)
+
+	if err != nil {
+		return fmt.Errorf("failed to run link repository update query, repository: %s, error: %v", repository.FullName, err)
+	}
+
+	_, err = result.RowsAffected()
+
+	if err != nil {
+		return fmt.Errorf("link repository rows affected returns error: %v", err)
 	}
 
 	return nil

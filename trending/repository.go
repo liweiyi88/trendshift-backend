@@ -1,6 +1,8 @@
-package github
+package trending
 
-import "time"
+import (
+	"time"
+)
 
 type Owner struct {
 	Name      string `json:"login"`

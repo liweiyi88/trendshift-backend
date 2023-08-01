@@ -8,6 +8,7 @@ import (
 
 var (
 	DatabaseDSN string
+	GitHubToken string
 )
 
 func Init() {
@@ -15,4 +16,5 @@ func Init() {
 	godotenv.Load(".env")
 
 	DatabaseDSN = os.Getenv("DATABASE_DSN")
+	GitHubToken = os.Getenv("GITHUB_TOKEN")
 }

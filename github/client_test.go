@@ -3,21 +3,23 @@ package github
 import (
 	"context"
 	"testing"
+
+	"github.com/liweiyi88/gti/trending"
 )
 
-func TestFetchRepository(t *testing.T) {
-	fetcher := Fetcher{}
+func TestGetRepository(t *testing.T) {
+	client := Client{}
 
-	ghRepo, err := fetcher.FetchRepository(context.Background(), "liweiyi88/onedump")
+	ghRepo, err := client.GetRepository(context.Background(), "liweiyi88/onedump")
 	if err != nil {
 		t.Error(err)
 	}
 
-	expect := GhRepository{
+	expect := trending.GhRepository{
 		Id:       0,
 		GhrId:    540829453,
 		FullName: "liweiyi88/onedump",
-		Owner: Owner{
+		Owner: trending.Owner{
 			Name:      "liweiyi88",
 			AvatarUrl: "https://avatars.githubusercontent.com/u/7248260?v=4",
 		},

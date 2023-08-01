@@ -2,17 +2,21 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/repository"
+	"github.com/liweiyi88/gti/github"
+	"github.com/liweiyi88/gti/global"
 	"github.com/liweiyi88/gti/scraper"
+	"github.com/liweiyi88/gti/trendingsvc"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
 	"golang.org/x/sync/errgroup"
@@ -49,22 +53,33 @@ var scrapeCmd = &cobra.Command{
 			stop()
 		}()
 
-		repositories := repository.InitRepositories(db)
+		repositories := global.InitRepositories(db)
 		scraper := scraper.NewGhTrendScraper(repositories.TrendingRepositoryRepo)
 
-		languageToScrape := []string{"", "javascript", "python", "Go", "java", "php", "c++", "c", "typescript", "ruby", "c#", "rust"}
+		languageToScrape := []string{"", "javascript", "python", "go", "java", "php", "c++", "c", "typescript", "ruby", "c#", "rust"}
 
-		group, ctx := errgroup.WithContext(ctx)
+		group, groupCtx := errgroup.WithContext(ctx)
+
+		slog.Info(fmt.Sprintf("scraping for languages: %s...", strings.Join(languageToScrape, ",")))
 
 		for _, language := range languageToScrape {
 			language := language
 			group.Go(func() error {
-				return scraper.Scrape(ctx, language)
+				return scraper.Scrape(groupCtx, language)
 			})
 		}
 
 		if err := group.Wait(); err != nil {
 			log.Fatalf("failed to scrape trending page: %v", err)
 		}
+
+		slog.Info("linking repositories...")
+		err := trendingsvc.LinkRepositories(ctx, repositories.GhRepositoryRepo, repositories.TrendingRepositoryRepo, github.NewClient(config.GitHubToken))
+
+		if err != nil {
+			log.Fatalf("failed to link repositories trending page: %v", err)
+		}
+
+		slog.Info("scrape completed.")
 	},
 }
