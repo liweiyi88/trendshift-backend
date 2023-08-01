@@ -54,7 +54,7 @@ func (tr *TrendingRepositoryRepo) FindUnlinkedRepositories(ctx context.Context) 
 	return unlinkedRepos, nil
 }
 
-func (tr *TrendingRepositoryRepo) FindRankedTrendsByDate(ctx context.Context, date time.Time, language string) (RankedTrendingRepository, error) {
+func (tr *TrendingRepositoryRepo) FindRankedTrendingRepoByDate(ctx context.Context, date time.Time, language string) (RankedTrendingRepository, error) {
 	lang := strings.TrimSpace(language)
 
 	query := "SELECT * FROM trending_repositories WHERE trend_date = ? AND language is null"

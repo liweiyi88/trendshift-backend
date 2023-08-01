@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
-	"github.com/liweiyi88/gti/trending"
+	trend "github.com/liweiyi88/gti/trending"
 )
 
 const ghTrendScrapePath = ".Box-row .h3.lh-condensed a[href]"
@@ -50,7 +50,7 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 	c.Visit(gh.getTrendPageUrl(language))
 
 	now := time.Now()
-	rankedTrends, err := gh.trendRepo.FindRankedTrendsByDate(ctx, now, language)
+	rankedTrendingRepo, err := gh.trendRepo.FindRankedTrendingRepoByDate(ctx, now, language)
 
 	if err != nil {
 		return fmt.Errorf("failed to retrieve ranked trending repositoris: %v", err)
@@ -59,7 +59,7 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 	for index, repo := range repos {
 		rank := index + 1
 
-		rankedTrend, ok := rankedTrends[rank]
+		rankedTrend, ok := rankedTrendingRepo[rank]
 
 		if ok && rankedTrend.RepoFullName != "" {
 			// if trending repo exist, do update.
@@ -69,7 +69,7 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 			gh.trendRepo.Update(ctx, rankedTrend)
 		} else {
 			// trending repo does not exist, do insert.
-			trend := trend.TrendingRepository{
+			trendingRepository := trend.TrendingRepository{
 				RepoFullName: repo,
 				ScrapedAt:    now,
 				TrendDate:    now,
@@ -77,22 +77,22 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 			}
 
 			if language != "" {
-				trend.Language = sql.NullString{
+				trendingRepository.Language = sql.NullString{
 					String: strings.ToLower(language),
 					Valid:  true,
 				}
 			} else {
-				trend.Language = sql.NullString{
+				trendingRepository.Language = sql.NullString{
 					String: "",
 					Valid:  false,
 				}
 			}
 
-			gh.trendRepo.Save(ctx, trend)
+			err = gh.trendRepo.Save(ctx, trendingRepository)
 		}
 	}
 
-	return nil
+	return err
 }
 
 func (gh *GhTrendScraper) getTrendPageUrl(language string) string {

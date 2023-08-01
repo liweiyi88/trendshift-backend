@@ -13,7 +13,7 @@ import (
 
 // Fetch github repo details via REST api and store the result in DB.
 type Fetcher struct {
-	Pat              string // the personal acesss token, if set, the common rate limit is 5000 req/hour, otherwise, it will be 60 req/hour.
+	Token            string // the personal acesss token, if set, the common rate limit is 5000 req/hour, otherwise, it will be 60 req/hour.
 	GhRepositoryRepo GhRepositoryRepo
 }
 
@@ -27,8 +27,8 @@ func (f *Fetcher) FetchRepository(ctx context.Context, fullName string) (GhRepos
 		return ghRepository, err
 	}
 
-	if strings.TrimSpace(f.Pat) != "" {
-		req.Header.Set("Authorization: Bearer", f.Pat)
+	if strings.TrimSpace(f.Token) != "" {
+		req.Header.Set("Authorization: Bearer", f.Token)
 	}
 
 	client := &http.Client{}

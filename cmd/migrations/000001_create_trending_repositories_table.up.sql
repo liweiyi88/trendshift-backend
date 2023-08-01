@@ -10,7 +10,7 @@ CREATE TABLE repositories (
     `created_at` datetime NOT NULL,
     `updated_at` datetime NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE (full_name)
+    UNIQUE (`full_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE trending_repositories (
@@ -23,5 +23,5 @@ CREATE TABLE trending_repositories (
     `repository_id` INT DEFAULT NULL,
     PRIMARY KEY (`id`),
     FOREIGN KEY (repository_id) REFERENCES repositories(id),
-    UNIQUE (full_name)
+    UNIQUE (`full_name`, `language`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
