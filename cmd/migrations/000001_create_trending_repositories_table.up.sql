@@ -30,6 +30,7 @@ CREATE TABLE trending_repositories (
 CREATE TABLE tags (
     `id` INT NOT NULL AUTO_INCREMENT,
     `name` varchar(255) NOT NULL,
+    UNIQUE (`name`),
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

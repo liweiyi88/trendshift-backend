@@ -19,6 +19,20 @@ func NewGhRepositoryRepo(db database.DB) *GhRepositoryRepo {
 	}
 }
 
+func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository, error) {
+	query := "SELECT * FROM repositories WHERE id = ?"
+
+	var ghr GhRepository
+
+	row := gr.db.QueryRowContext(ctx, query, id)
+
+	if err := row.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt); err != nil {
+		return ghr, err
+	}
+
+	return ghr, nil
+}
+
 func (gr *GhRepositoryRepo) FindRepositoriesByNames(ctx context.Context, names []string) ([]GhRepository, error) {
 	ghRepos := make([]GhRepository, 0)
 
@@ -120,4 +134,39 @@ func (gr *GhRepositoryRepo) Update(ctx context.Context, ghRepo GhRepository) err
 	}
 
 	return nil
+}
+
+func (gr *GhRepositoryRepo) UpdateWithTags(ctx context.Context, ghRepo GhRepository, tags []Tag) error {
+	tx, err := gr.db.BeginTx(ctx, nil)
+
+	if err != nil {
+		return fmt.Errorf("failed to begin repository update tags transaction: %v", err)
+	}
+
+	defer tx.Rollback()
+	query := "DELETE FROM `repositories_tags` WHERE repository_id = ?"
+
+	_, err = tx.ExecContext(ctx, query, ghRepo.Id)
+
+	if err != nil {
+		return fmt.Errorf("failed to run delete repositories_tags query, repository id: %d, error: %v", ghRepo.Id, err)
+	}
+
+	for _, tag := range tags {
+		query := "INSERT INTO `repositories_tags` (`repository_id`, `tag_id`) VALUES (?, ?)"
+
+		result, err := tx.ExecContext(ctx, query, ghRepo.Id, tag.Id)
+
+		if err != nil {
+			return fmt.Errorf("failed to run insert repositories_tags query, repository id: %d, tag id: %d error: %v", ghRepo.Id, tag.Id, err)
+		}
+
+		_, err = result.RowsAffected()
+
+		if err != nil {
+			return fmt.Errorf("repositories_tags insert rows affected returns error: %v", err)
+		}
+	}
+
+	return tx.Commit()
 }
