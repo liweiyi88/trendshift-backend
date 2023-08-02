@@ -9,7 +9,7 @@ CREATE TABLE repositories (
     `owner_avatar_url` varchar(255) NOT NULL,
     `created_at` datetime NOT NULL,
     `updated_at` datetime NOT NULL,
-    PRIMARY KEY (id),
+    PRIMARY KEY (`id`),
     UNIQUE (`full_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -22,6 +22,23 @@ CREATE TABLE trending_repositories (
     `trend_date` date NOT NULL,
     `repository_id` INT DEFAULT NULL,
     PRIMARY KEY (`id`),
-    FOREIGN KEY (repository_id) REFERENCES repositories(id),
+    KEY `IDX_5A8A6C8D8545BDF5` (`repository_id`),
+    CONSTRAINT `FK_XZPGTDNYZELENQFI` FOREIGN KEY (`repository_id`) REFERENCES `repositories` (`id`),
     UNIQUE (`full_name`, `language`, `trend_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE tags (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `repositories_tags` (
+  `repository_id` int NOT NULL,
+  `tag_id` int NOT NULL,
+  PRIMARY KEY (`repository_id`,`tag_id`),
+  KEY `IDX_CPJZDYMXGPWTCNYA` (`repository_id`),
+  KEY `IDX_DIVFKQKQHBOBOYBD` (`tag_id`),
+  CONSTRAINT `FK_WSHAIEZHCUJVVCKB` FOREIGN KEY (`repository_id`) REFERENCES `repositories` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_BFONQXGBCQOTMHMQ` FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
