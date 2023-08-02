@@ -23,5 +23,5 @@ CREATE TABLE trending_repositories (
     `repository_id` INT DEFAULT NULL,
     PRIMARY KEY (`id`),
     FOREIGN KEY (repository_id) REFERENCES repositories(id),
-    UNIQUE (`full_name`, `language`)
+    UNIQUE (`full_name`, `language`, `trend_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

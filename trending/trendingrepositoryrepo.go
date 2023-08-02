@@ -104,7 +104,7 @@ func (tr *TrendingRepositoryRepo) Save(ctx context.Context, trendingRepository T
 	result, err := tr.db.ExecContext(ctx, query, trendingRepository.RepoFullName, trendingRepository.Language, trendingRepository.Rank, scrapeAt.Format("2006-01-02 15:04:05"), trendingRepository.TrendDate.Format("2006-01-02"))
 
 	if err != nil {
-		return fmt.Errorf("failed to exec insert trending_repositories query to db, error: %v", err)
+		return fmt.Errorf("failed to exec insert trending_repositories query to db language: %v, full name: %s, error: %v", trendingRepository.Language, trendingRepository.RepoFullName, err)
 	}
 
 	_, err = result.RowsAffected()
