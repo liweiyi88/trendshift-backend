@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func LinkRepositories(ctx context.Context, grr *trending.GhRepositoryRepo, trr *trending.TrendingRepositoryRepo, gh *github.Client) error {
+func FetchRepositories(ctx context.Context, grr *trending.GhRepositoryRepo, trr *trending.TrendingRepositoryRepo, gh *github.Client) error {
 	unlinkedRepositories, err := trr.FindUnlinkedRepositories(ctx)
 
 	if err != nil {

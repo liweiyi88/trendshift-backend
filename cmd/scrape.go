@@ -74,7 +74,7 @@ var scrapeCmd = &cobra.Command{
 		}
 
 		slog.Info("linking repositories...")
-		err := trendingsvc.LinkRepositories(ctx, repositories.GhRepositoryRepo, repositories.TrendingRepositoryRepo, github.NewClient(config.GitHubToken))
+		err := trendingsvc.FetchRepositories(ctx, repositories.GhRepositoryRepo, repositories.TrendingRepositoryRepo, github.NewClient(config.GitHubToken))
 
 		if err != nil {
 			log.Fatalf("failed to link repositories trending page: %v", err)
