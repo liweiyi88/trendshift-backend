@@ -15,7 +15,6 @@ var serverCmd = &cobra.Command{
 	Short: "Start the API server",
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Init()
-
 		web.Server()
 	},
 }

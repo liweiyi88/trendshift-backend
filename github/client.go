@@ -65,7 +65,7 @@ func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (tre
 		return ghRepository, fmt.Errorf("failed to decode repository body: %v", err)
 	}
 
-	slog.Info("Fetch repo response", slog.Group("github",
+	slog.Info(fmt.Sprintf("fetching %s", ghRepository.FullName), slog.Group("github",
 		slog.String("X-Ratelimit-Limit", res.Header.Get("X-Ratelimit-Limit")),
 		slog.String("X-Ratelimit-Remaining", res.Header.Get("X-Ratelimit-Remaining")),
 		slog.String("X-Ratelimit-Reset", res.Header.Get("X-Ratelimit-Reset")),

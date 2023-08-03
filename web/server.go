@@ -10,17 +10,30 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/database"
 	"github.com/liweiyi88/gti/global"
 	"github.com/liweiyi88/gti/web/controller"
 	"golang.org/x/exp/slog"
 )
 
+type Controllers struct {
+	repositoryController *controller.RepositoryController
+	tagController        *controller.TagController
+}
+
+func initControllers(repositories *global.Repositories) *Controllers {
+	return &Controllers{
+		repositoryController: controller.NewRepositoryController(repositories.GhRepositoryRepo),
+		tagController:        controller.NewTagController(repositories.TagRepo),
+	}
+}
+
 func Server() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	db := database.GetInstance(ctx)
 	repositories := global.InitRepositories(db)
-	repositoryController := controller.NewRepositoryController(repositories.GhRepositoryRepo)
+	controllers := initControllers(repositories)
 
 	defer func() {
 		err := db.Close()
@@ -32,6 +45,7 @@ func Server() {
 		stop()
 	}()
 
+	gin.SetMode(config.GinMode)
 	router := gin.Default()
 	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
@@ -39,10 +53,11 @@ func Server() {
 
 	api := router.Group("/api")
 
-	//TODO: create tag, search tags.
 	//TODO: basic authentication for create tag and attach tags to repo.
-	api.POST("/tags/", postTag)
-	api.POST("/repositories/:id/tags", repositoryController.AttachTagsToRepository)
+	//TODO: login api
+	api.GET("/tags", controllers.tagController.List)
+	api.POST("/tags", controllers.tagController.Save)
+	api.POST("/repositories/:id/tags", controllers.repositoryController.SaveTags)
 
 	srv := &http.Server{
 		Addr:    ":8080",
@@ -69,7 +84,7 @@ func Server() {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown: ", err)
+		log.Fatal("server forced to shutdown: ", err)
 	}
 
 	slog.Info("server exit")

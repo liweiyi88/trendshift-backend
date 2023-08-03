@@ -9,6 +9,7 @@ import (
 var (
 	DatabaseDSN string
 	GitHubToken string
+	GinMode     string
 )
 
 func Init() {
@@ -17,4 +18,5 @@ func Init() {
 
 	DatabaseDSN = os.Getenv("DATABASE_DSN")
 	GitHubToken = os.Getenv("GITHUB_TOKEN")
+	GinMode = os.Getenv("GIN_MODE")
 }

@@ -136,7 +136,7 @@ func (gr *GhRepositoryRepo) Update(ctx context.Context, ghRepo GhRepository) err
 	return nil
 }
 
-func (gr *GhRepositoryRepo) UpdateWithTags(ctx context.Context, ghRepo GhRepository, tags []Tag) error {
+func (gr *GhRepositoryRepo) SaveTags(ctx context.Context, ghRepo GhRepository, tags []Tag) error {
 	tx, err := gr.db.BeginTx(ctx, nil)
 
 	if err != nil {

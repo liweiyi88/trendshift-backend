@@ -14,13 +14,18 @@ type RepositoryController struct {
 	grr *trending.GhRepositoryRepo
 }
 
+type AttachTagsRequest struct {
+	Id   int    `json:"id" binding:"required"`
+	Name string `json:"name" binding:"required"`
+}
+
 func NewRepositoryController(grr *trending.GhRepositoryRepo) *RepositoryController {
 	return &RepositoryController{
 		grr: grr,
 	}
 }
 
-func (rc *RepositoryController) AttachTagsToRepository(c *gin.Context) {
+func (rc *RepositoryController) SaveTags(c *gin.Context) {
 	repositoryId, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
@@ -40,7 +45,7 @@ func (rc *RepositoryController) AttachTagsToRepository(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Error"})
 	}
 
-	requestTags := make([]trending.UpdateTagRequest, 0)
+	requestTags := make([]AttachTagsRequest, 0)
 
 	if err := c.ShouldBind(&requestTags); err != nil {
 		slog.Error(err.Error())
@@ -50,6 +55,8 @@ func (rc *RepositoryController) AttachTagsToRepository(c *gin.Context) {
 
 	tags := make([]trending.Tag, 0)
 
+	// TODO: do we need to transform the request to tag, or shall we create a tag interface that could pass to the grr.UPdateWithTags?
+	// to avoid the transformation?
 	for _, rt := range requestTags {
 		var tag trending.Tag
 
@@ -59,7 +66,7 @@ func (rc *RepositoryController) AttachTagsToRepository(c *gin.Context) {
 		tags = append(tags, tag)
 	}
 
-	err = rc.grr.UpdateWithTags(c, ghRepository, tags)
+	err = rc.grr.SaveTags(c, ghRepository, tags)
 
 	if err != nil {
 		slog.Error(err.Error())
