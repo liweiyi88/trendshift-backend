@@ -6,9 +6,9 @@ func TestSetPassowrdAndComparePassword(t *testing.T) {
 	user := User{}
 
 	plainPassword := "letstest"
-	user.setPassword(plainPassword)
+	user.SetPassword(plainPassword)
 
-	if !user.isPasswordValid(plainPassword) {
+	if !user.IsPasswordValid(plainPassword) {
 		t.Error("expect valid password but got invalid")
 	}
 }

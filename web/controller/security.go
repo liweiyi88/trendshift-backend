@@ -38,10 +38,16 @@ func (sc *SecurityController) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := sc.ur.FindByNamePassword(c, request.Username, request.Password)
+	user, err := sc.ur.FindByName(c, request.Username)
 
 	if err != nil {
 		slog.Error(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		return
+	}
+
+	if !user.IsPasswordValid(request.Password) {
+		slog.Error("invalid password")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
 		return
 	}
