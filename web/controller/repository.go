@@ -53,10 +53,8 @@ func (rc *RepositoryController) SaveTags(c *gin.Context) {
 		return
 	}
 
-	tags := make([]trending.Tag, 0)
+	tags := make([]trending.Tag, len(requestTags))
 
-	// TODO: do we need to transform the request to tag, or shall we create a tag interface that could pass to the grr.UPdateWithTags?
-	// to avoid the transformation?
 	for _, rt := range requestTags {
 		var tag trending.Tag
 
@@ -74,5 +72,5 @@ func (rc *RepositoryController) SaveTags(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, repositoryId)
+	c.JSON(http.StatusOK, ghRepository)
 }

@@ -10,6 +10,7 @@ var (
 	DatabaseDSN string
 	GitHubToken string
 	GinMode     string
+	SignIngKey  string
 )
 
 func Init() {
@@ -19,4 +20,5 @@ func Init() {
 	DatabaseDSN = os.Getenv("DATABASE_DSN")
 	GitHubToken = os.Getenv("GITHUB_TOKEN")
 	GinMode = os.Getenv("GIN_MODE")
+	SignIngKey = os.Getenv("SIGNING_KEY")
 }

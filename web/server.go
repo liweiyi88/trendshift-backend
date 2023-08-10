@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"github.com/liweiyi88/gti/database"
 	"github.com/liweiyi88/gti/global"
 	"github.com/liweiyi88/gti/web/controller"
+	"github.com/liweiyi88/gti/web/middleware"
 	"golang.org/x/exp/slog"
 )
 
@@ -29,11 +31,38 @@ func initControllers(repositories *global.Repositories) *Controllers {
 	}
 }
 
-func Server() {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+func initialize(ctx context.Context) (*sql.DB, *Controllers) {
 	db := database.GetInstance(ctx)
 	repositories := global.InitRepositories(db)
 	controllers := initControllers(repositories)
+
+	return db, controllers
+}
+
+func setupRouter(controllers Controllers) *gin.Engine {
+	gin.SetMode(config.GinMode)
+	router := gin.Default()
+
+	router.GET("/ping", func(c *gin.Context) {
+		c.String(http.StatusOK, "pong")
+	})
+
+	router.GET("/api/tags", controllers.tagController.List)
+
+	//TODO: login api, shall we return refresh token as well?
+	auth := router.Group("/api")
+
+	// JWT authentication protected routes.
+	auth.Use(middleware.JwtAuth())
+	auth.POST("/tags", controllers.tagController.Save).Use(middleware.JwtAuth())
+	auth.POST("/repositories/:id/tags", controllers.repositoryController.SaveTags).Use(middleware.JwtAuth())
+
+	return router
+}
+
+func Server() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	db, controllers := initialize(ctx)
 
 	defer func() {
 		err := db.Close()
@@ -45,19 +74,7 @@ func Server() {
 		stop()
 	}()
 
-	gin.SetMode(config.GinMode)
-	router := gin.Default()
-	router.GET("/ping", func(c *gin.Context) {
-		c.String(http.StatusOK, "pong")
-	})
-
-	api := router.Group("/api")
-
-	//TODO: basic authentication for create tag and attach tags to repo.
-	//TODO: login api
-	api.GET("/tags", controllers.tagController.List)
-	api.POST("/tags", controllers.tagController.Save)
-	api.POST("/repositories/:id/tags", controllers.repositoryController.SaveTags)
+	router := setupRouter(*controllers)
 
 	srv := &http.Server{
 		Addr:    ":8080",
