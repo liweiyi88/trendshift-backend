@@ -6,12 +6,12 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/model"
 	"golang.org/x/exp/slog"
 )
 
 type RepositoryController struct {
-	grr *trending.GhRepositoryRepo
+	grr *model.GhRepositoryRepo
 }
 
 type AttachTagsRequest struct {
@@ -19,7 +19,7 @@ type AttachTagsRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
-func NewRepositoryController(grr *trending.GhRepositoryRepo) *RepositoryController {
+func NewRepositoryController(grr *model.GhRepositoryRepo) *RepositoryController {
 	return &RepositoryController{
 		grr: grr,
 	}
@@ -53,10 +53,10 @@ func (rc *RepositoryController) SaveTags(c *gin.Context) {
 		return
 	}
 
-	tags := make([]trending.Tag, len(requestTags))
+	tags := make([]model.Tag, len(requestTags))
 
 	for _, rt := range requestTags {
-		var tag trending.Tag
+		var tag model.Tag
 
 		tag.Id = rt.Id
 		tag.Name = rt.Name

@@ -1,4 +1,4 @@
-package trending
+package model
 
 import (
 	"database/sql"

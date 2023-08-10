@@ -5,19 +5,19 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/model"
 	"golang.org/x/exp/slog"
 )
 
 type TagController struct {
-	tr *trending.TagRepo
+	tr *model.TagRepo
 }
 
 type CreateTagRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
-func NewTagController(tr *trending.TagRepo) *TagController {
+func NewTagController(tr *model.TagRepo) *TagController {
 	return &TagController{
 		tr: tr,
 	}

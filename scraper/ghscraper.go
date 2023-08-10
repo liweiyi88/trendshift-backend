@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/model"
 )
 
 const ghTrendScrapePath = ".Box-row .h3.lh-condensed a[href]"
@@ -17,10 +17,10 @@ const ghTrendScrapeBaseURL = "https://github.com/trending"
 
 type GhTrendScraper struct {
 	url, path string
-	trendRepo *trending.TrendingRepositoryRepo
+	trendRepo *model.TrendingRepositoryRepo
 }
 
-func NewGhTrendScraper(trendRepo *trending.TrendingRepositoryRepo) *GhTrendScraper {
+func NewGhTrendScraper(trendRepo *model.TrendingRepositoryRepo) *GhTrendScraper {
 	return &GhTrendScraper{
 		url:       ghTrendScrapeBaseURL,
 		path:      ghTrendScrapePath,
@@ -69,7 +69,7 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 			gh.trendRepo.Update(ctx, trendingRepo)
 		} else {
 			// trending repo does not exist, do insert.
-			trendingRepo := trending.TrendingRepository{
+			trendingRepo := model.TrendingRepository{
 				RepoFullName: repo,
 				ScrapedAt:    now,
 				TrendDate:    now,

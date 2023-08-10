@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/model"
 )
 
 type AppClaim struct {
@@ -25,7 +25,7 @@ func NewTokenService(signingKey string) *TokenService {
 	}
 }
 
-func (t *TokenService) Generate(user trending.User) (string, error) {
+func (t *TokenService) Generate(user model.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.Id,
 		"sub":     user.Username,

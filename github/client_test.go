@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/model"
 )
 
 func TestGetRepository(t *testing.T) {
@@ -15,11 +15,11 @@ func TestGetRepository(t *testing.T) {
 		t.Error(err)
 	}
 
-	expect := trending.GhRepository{
+	expect := model.GhRepository{
 		Id:       0,
 		GhrId:    540829453,
 		FullName: "liweiyi88/onedump",
-		Owner: trending.Owner{
+		Owner: model.Owner{
 			Name:      "liweiyi88",
 			AvatarUrl: "https://avatars.githubusercontent.com/u/7248260?v=4",
 		},

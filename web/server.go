@@ -31,15 +31,11 @@ func initControllers(repositories *global.Repositories) *Controllers {
 	}
 }
 
-func initialize(ctx context.Context) (*sql.DB, *Controllers) {
+func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 	db := database.GetInstance(ctx)
 	repositories := global.InitRepositories(db)
 	controllers := initControllers(repositories)
 
-	return db, controllers
-}
-
-func setupRouter(controllers Controllers) *gin.Engine {
 	gin.SetMode(config.GinMode)
 	router := gin.Default()
 
@@ -49,20 +45,21 @@ func setupRouter(controllers Controllers) *gin.Engine {
 
 	router.GET("/api/tags", controllers.tagController.List)
 
-	//TODO: login api, shall we return refresh token as well?
+	//TODO: login api.
 	auth := router.Group("/api")
 
-	// JWT authentication protected routes.
+	// Protected routes.
 	auth.Use(middleware.JwtAuth())
 	auth.POST("/tags", controllers.tagController.Save).Use(middleware.JwtAuth())
 	auth.POST("/repositories/:id/tags", controllers.repositoryController.SaveTags).Use(middleware.JwtAuth())
 
-	return router
+	return router, db
 }
 
 func Server() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	db, controllers := initialize(ctx)
+
+	router, db := setupRouter(ctx)
 
 	defer func() {
 		err := db.Close()
@@ -73,8 +70,6 @@ func Server() {
 
 		stop()
 	}()
-
-	router := setupRouter(*controllers)
 
 	srv := &http.Server{
 		Addr:    ":8080",

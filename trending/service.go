@@ -1,15 +1,15 @@
-package trendingsvc
+package trending
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/liweiyi88/gti/github"
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/model"
 	"golang.org/x/sync/errgroup"
 )
 
-func FetchRepositories(ctx context.Context, grr *trending.GhRepositoryRepo, trr *trending.TrendingRepositoryRepo, gh *github.Client) error {
+func FetchRepositories(ctx context.Context, grr *model.GhRepositoryRepo, trr *model.TrendingRepositoryRepo, gh *github.Client) error {
 	unlinkedRepositories, err := trr.FindUnlinkedRepositories(ctx)
 
 	if err != nil {

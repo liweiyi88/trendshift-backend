@@ -2,19 +2,19 @@ package global
 
 import (
 	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/model"
 )
 
 type Repositories struct {
-	TrendingRepositoryRepo *trending.TrendingRepositoryRepo
-	GhRepositoryRepo       *trending.GhRepositoryRepo
-	TagRepo                *trending.TagRepo
+	TrendingRepositoryRepo *model.TrendingRepositoryRepo
+	GhRepositoryRepo       *model.GhRepositoryRepo
+	TagRepo                *model.TagRepo
 }
 
 func InitRepositories(db database.DB) *Repositories {
 	return &Repositories{
-		TrendingRepositoryRepo: trending.NewTrendingRepositoryRepo(db),
-		GhRepositoryRepo:       trending.NewGhRepositoryRepo(db),
-		TagRepo:                trending.NewTagRepositoryRepo(db),
+		TrendingRepositoryRepo: model.NewTrendingRepositoryRepo(db),
+		GhRepositoryRepo:       model.NewGhRepositoryRepo(db),
+		TagRepo:                model.NewTagRepositoryRepo(db),
 	}
 }

@@ -4,13 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/model"
 )
 
 func TestGenerate(t *testing.T) {
 	svc := NewTokenService("abcdefg")
 
-	user := trending.User{
+	user := model.User{
 		Username: "liweiyi88",
 		Password: "testpass",
 	}
@@ -27,7 +27,7 @@ func TestGenerate(t *testing.T) {
 func TestVerify(t *testing.T) {
 	svc := NewTokenService("abcdefg")
 
-	user := trending.User{
+	user := model.User{
 		Id:       111,
 		Username: "liweiyi88",
 		Password: "testpass",

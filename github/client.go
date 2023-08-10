@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/gti/model"
 	"golang.org/x/exp/slog"
 )
 
@@ -23,10 +23,10 @@ func NewClient(token string) *Client {
 	}
 }
 
-func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (trending.GhRepository, error) {
+func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (model.GhRepository, error) {
 	url := fmt.Sprintf("%s/%s", "https://api.github.com/repos", fullName)
 
-	var ghRepository trending.GhRepository
+	var ghRepository model.GhRepository
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

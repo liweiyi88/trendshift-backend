@@ -1,4 +1,4 @@
-package trending
+package model
 
 type User struct {
 	Id       int

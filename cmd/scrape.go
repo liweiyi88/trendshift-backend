@@ -16,7 +16,7 @@ import (
 	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/global"
 	"github.com/liweiyi88/gti/scraper"
-	"github.com/liweiyi88/gti/trendingsvc"
+	"github.com/liweiyi88/gti/trending"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
 	"golang.org/x/sync/errgroup"
@@ -74,7 +74,7 @@ var scrapeCmd = &cobra.Command{
 		}
 
 		slog.Info("linking repositories...")
-		err := trendingsvc.FetchRepositories(ctx, repositories.GhRepositoryRepo, repositories.TrendingRepositoryRepo, github.NewClient(config.GitHubToken))
+		err := trending.FetchRepositories(ctx, repositories.GhRepositoryRepo, repositories.TrendingRepositoryRepo, github.NewClient(config.GitHubToken))
 
 		if err != nil {
 			log.Fatalf("failed to link repositories trending page: %v", err)
