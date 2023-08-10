@@ -2,7 +2,6 @@ package jwttoken
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -31,7 +30,7 @@ func (t *TokenService) Generate(user model.User) (string, error) {
 		"sub":     user.Username,
 		"iss":     "gti",
 		"exp":     time.Now().Add(15 * time.Minute).Unix(),
-		"role":    strings.Join(user.Role, ","),
+		"role":    user.Role,
 	})
 
 	return token.SignedString(t.signingKey)

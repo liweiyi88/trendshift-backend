@@ -22,12 +22,14 @@ import (
 type Controllers struct {
 	repositoryController *controller.RepositoryController
 	tagController        *controller.TagController
+	securityController   *controller.SecurityController
 }
 
 func initControllers(repositories *global.Repositories) *Controllers {
 	return &Controllers{
 		repositoryController: controller.NewRepositoryController(repositories.GhRepositoryRepo),
 		tagController:        controller.NewTagController(repositories.TagRepo),
+		securityController:   controller.NewSecurityController(repositories.UserRepo),
 	}
 }
 
@@ -43,6 +45,8 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 		c.String(http.StatusOK, "pong")
 	})
 
+	router.POST("/login", controllers.securityController.Login)
+
 	router.GET("/api/tags", controllers.tagController.List)
 
 	//TODO: login api.
@@ -50,8 +54,8 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 
 	// Protected routes.
 	auth.Use(middleware.JwtAuth())
-	auth.POST("/tags", controllers.tagController.Save).Use(middleware.JwtAuth())
-	auth.POST("/repositories/:id/tags", controllers.repositoryController.SaveTags).Use(middleware.JwtAuth())
+	auth.POST("/tags", controllers.tagController.Save)
+	auth.POST("/repositories/:id/tags", controllers.repositoryController.SaveTags)
 
 	return router, db
 }

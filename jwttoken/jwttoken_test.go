@@ -1,7 +1,6 @@
 package jwttoken
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/liweiyi88/gti/model"
@@ -31,7 +30,7 @@ func TestVerify(t *testing.T) {
 		Id:       111,
 		Username: "liweiyi88",
 		Password: "testpass",
-		Role:     []string{"user", "admin"},
+		Role:     "user,admin",
 	}
 
 	tokenString, err := svc.Generate(user)
@@ -60,7 +59,7 @@ func TestVerify(t *testing.T) {
 			},
 			{
 				actual: claims.Role,
-				want:   strings.Join(user.Role, ","),
+				want:   user.Role,
 			},
 			{
 				actual: claims.Subject,

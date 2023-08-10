@@ -10,6 +10,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cobra v1.7.0
+	golang.org/x/crypto v0.9.0
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
 
@@ -32,7 +33,6 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

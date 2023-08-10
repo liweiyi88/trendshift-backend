@@ -47,7 +47,7 @@ func (rc *RepositoryController) SaveTags(c *gin.Context) {
 
 	requestTags := make([]AttachTagsRequest, 0)
 
-	if err := c.ShouldBind(&requestTags); err != nil {
+	if err := c.ShouldBindJSON(&requestTags); err != nil {
 		slog.Error(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

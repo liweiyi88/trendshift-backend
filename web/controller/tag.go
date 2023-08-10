@@ -46,7 +46,7 @@ func (tc *TagController) List(c *gin.Context) {
 func (tc *TagController) Save(c *gin.Context) {
 	var request CreateTagRequest
 
-	if err := c.ShouldBind(&request); err != nil {
+	if err := c.ShouldBindJSON(&request); err != nil {
 		slog.Error(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
