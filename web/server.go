@@ -49,10 +49,8 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 
 	router.GET("/api/tags", controllers.tagController.List)
 
-	//TODO: login api.
-	auth := router.Group("/api")
-
 	// Protected routes.
+	auth := router.Group("/api")
 	auth.Use(middleware.JwtAuth())
 	auth.POST("/tags", controllers.tagController.Save)
 	auth.POST("/repositories/:id/tags", controllers.repositoryController.SaveTags)
