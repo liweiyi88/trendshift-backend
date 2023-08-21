@@ -20,7 +20,8 @@ type LoginRequest struct {
 }
 
 type tokenResponse struct {
-	Token string `json:"access_token"`
+	Token     string `json:"access_token"`
+	ExpiredAt int64  `json:"expired_at"`
 }
 
 func NewSecurityController(ur *model.UserRepo) *SecurityController {
@@ -53,7 +54,7 @@ func (sc *SecurityController) Login(c *gin.Context) {
 	}
 
 	jwtsvc := jwttoken.NewTokenService(config.SignIngKey)
-	tokenString, err := jwtsvc.Generate(user)
+	tokenString, expiredAt, err := jwtsvc.Generate(user)
 
 	if err != nil {
 		slog.Error(err.Error())
@@ -63,5 +64,6 @@ func (sc *SecurityController) Login(c *gin.Context) {
 
 	var response tokenResponse
 	response.Token = tokenString
+	response.ExpiredAt = expiredAt
 	c.JSON(http.StatusOK, response)
 }

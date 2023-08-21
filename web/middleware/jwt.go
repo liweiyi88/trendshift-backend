@@ -16,8 +16,6 @@ func JwtAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		err := verifyToken(c)
 
-		slog.Info("fdsf")
-
 		if err != nil {
 			slog.Error("auth err", err)
 			c.String(http.StatusUnauthorized, "Unauthorized")

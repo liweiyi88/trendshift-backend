@@ -24,16 +24,20 @@ func NewTokenService(signingKey string) *TokenService {
 	}
 }
 
-func (t *TokenService) Generate(user model.User) (string, error) {
+func (t *TokenService) Generate(user model.User) (string, int64, error) {
+	expiredAt := time.Now().Add(15 * time.Minute).Unix()
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.Id,
 		"sub":     user.Username,
 		"iss":     "gti",
-		"exp":     time.Now().Add(15 * time.Minute).Unix(),
+		"exp":     expiredAt,
 		"role":    user.Role,
 	})
 
-	return token.SignedString(t.signingKey)
+	tokenString, err := token.SignedString(t.signingKey)
+
+	return tokenString, expiredAt, err
 }
 
 func (t *TokenService) Verify(tokenString string) (*jwt.Token, error) {

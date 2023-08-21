@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/database"
@@ -40,6 +41,8 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 
 	gin.SetMode(config.GinMode)
 	router := gin.Default()
+
+	router.Use(cors.Default())
 
 	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
