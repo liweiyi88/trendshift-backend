@@ -14,7 +14,7 @@ func TestGenerate(t *testing.T) {
 		Password: "testpass",
 	}
 
-	token, _, err := svc.Generate(user)
+	token, err := svc.Generate(user)
 
 	if err != nil {
 		t.Error(err)
@@ -33,7 +33,7 @@ func TestVerify(t *testing.T) {
 		Role:     "user,admin",
 	}
 
-	tokenString, _, err := svc.Generate(user)
+	tokenString, err := svc.Generate(user)
 
 	if err != nil {
 		t.Error(err)

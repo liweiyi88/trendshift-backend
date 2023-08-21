@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/model"
 )
 
@@ -24,8 +25,8 @@ func NewTokenService(signingKey string) *TokenService {
 	}
 }
 
-func (t *TokenService) Generate(user model.User) (string, int64, error) {
-	expiredAt := time.Now().Add(15 * time.Minute).Unix()
+func (t *TokenService) Generate(user model.User) (string, error) {
+	expiredAt := time.Now().Add(config.JWTCookieMaxAge).Unix()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.Id,
@@ -35,9 +36,7 @@ func (t *TokenService) Generate(user model.User) (string, int64, error) {
 		"role":    user.Role,
 	})
 
-	tokenString, err := token.SignedString(t.signingKey)
-
-	return tokenString, expiredAt, err
+	return token.SignedString(t.signingKey)
 }
 
 func (t *TokenService) Verify(tokenString string) (*jwt.Token, error) {
