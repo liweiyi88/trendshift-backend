@@ -54,6 +54,7 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 
 	router.POST("/login", controllers.securityController.Login)
 
+	router.GET("/api/repositories", controllers.repositoryController.List)
 	router.GET("/api/tags", controllers.tagController.List)
 
 	// Protected routes.

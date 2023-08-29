@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -31,6 +32,51 @@ func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository,
 	}
 
 	return ghr, nil
+}
+
+func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context) ([]GhRepository, error) {
+	query := "select repositories.*, tags.id as tag_id, tags.`name` as tag_name from repositories left join repositories_tags ON repositories.id = repositories_tags.repository_id left join tags on repositories_tags.tag_id = tags.id"
+
+	rows, err := gr.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	repoMap := make(map[int]*GhRepository, 0)
+
+	for rows.Next() {
+		var ghr GhRepository
+		var tagId sql.NullInt64
+		var tagName sql.NullString
+
+		if err := rows.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt, &tagId, &tagName); err != nil {
+			return nil, err
+		}
+
+		_, ok := repoMap[ghr.Id]
+
+		if tagId.Valid && tagName.Valid {
+			tag := Tag{
+				Id:   int(tagId.Int64),
+				Name: tagName.String,
+			}
+
+			ghr.Tags = append(ghr.Tags, tag)
+		}
+
+		if !ok {
+			repoMap[ghr.Id] = &ghr
+		}
+	}
+
+	ghRepos := make([]GhRepository, 0, len(repoMap))
+	for _, repo := range repoMap {
+		ghRepos = append(ghRepos, *repo)
+	}
+
+	return ghRepos, nil
 }
 
 func (gr *GhRepositoryRepo) FindRepositoriesByNames(ctx context.Context, names []string) ([]GhRepository, error) {

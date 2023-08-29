@@ -25,6 +25,17 @@ func NewRepositoryController(grr *model.GhRepositoryRepo) *RepositoryController 
 	}
 }
 
+func (rc *RepositoryController) List(c *gin.Context) {
+	ghRepositories, err := rc.grr.FindAllWithTags(c)
+	if err != nil {
+		slog.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, ghRepositories)
+}
+
 func (rc *RepositoryController) SaveTags(c *gin.Context) {
 	repositoryId, err := strconv.Atoi(c.Param("id"))
 
