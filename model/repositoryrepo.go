@@ -57,6 +57,8 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context) ([]GhRepository
 
 		_, ok := repoMap[ghr.Id]
 
+		ghr.Tags = make([]Tag, 0)
+
 		if tagId.Valid && tagName.Valid {
 			tag := Tag{
 				Id:   int(tagId.Int64),
