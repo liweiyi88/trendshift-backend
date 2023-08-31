@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -35,7 +36,7 @@ func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository,
 }
 
 func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context) ([]GhRepository, error) {
-	query := "select repositories.*, tags.id as tag_id, tags.`name` as tag_name from repositories left join repositories_tags ON repositories.id = repositories_tags.repository_id left join tags on repositories_tags.tag_id = tags.id"
+	query := "select repositories.*, tags.id as tag_id, tags.`name` as tag_name from repositories left join repositories_tags ON repositories.id = repositories_tags.repository_id left join tags on repositories_tags.tag_id = tags.id order"
 
 	rows, err := gr.db.QueryContext(ctx, query)
 	if err != nil {
@@ -57,7 +58,10 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context) ([]GhRepository
 
 		_, ok := repoMap[ghr.Id]
 
-		ghr.Tags = make([]Tag, 0)
+		if !ok {
+			ghr.Tags = make([]Tag, 0)
+			repoMap[ghr.Id] = &ghr
+		}
 
 		if tagId.Valid && tagName.Valid {
 			tag := Tag{
@@ -65,17 +69,21 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context) ([]GhRepository
 				Name: tagName.String,
 			}
 
-			ghr.Tags = append(ghr.Tags, tag)
-		}
-
-		if !ok {
-			repoMap[ghr.Id] = &ghr
+			repoMap[ghr.Id].Tags = append(repoMap[ghr.Id].Tags, tag)
 		}
 	}
 
 	ghRepos := make([]GhRepository, 0, len(repoMap))
-	for _, repo := range repoMap {
-		ghRepos = append(ghRepos, *repo)
+
+	keys := make([]int, 0, len(repoMap))
+	for k := range repoMap {
+		keys = append(keys, k)
+	}
+
+	sort.Ints(keys)
+
+	for _, k := range keys {
+		ghRepos = append(ghRepos, *repoMap[k])
 	}
 
 	return ghRepos, nil

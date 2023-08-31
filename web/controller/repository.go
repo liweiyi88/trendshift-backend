@@ -40,6 +40,7 @@ func (rc *RepositoryController) SaveTags(c *gin.Context) {
 	repositoryId, err := strconv.Atoi(c.Param("id"))
 
 	if err != nil {
+		slog.Error(err.Error())
 		c.JSON(http.StatusNotFound, nil)
 		return
 	}
@@ -64,7 +65,7 @@ func (rc *RepositoryController) SaveTags(c *gin.Context) {
 		return
 	}
 
-	tags := make([]model.Tag, len(requestTags))
+	tags := make([]model.Tag, 0, len(requestTags))
 
 	for _, rt := range requestTags {
 		var tag model.Tag
