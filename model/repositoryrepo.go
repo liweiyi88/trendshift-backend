@@ -36,7 +36,7 @@ func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository,
 }
 
 func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context) ([]GhRepository, error) {
-	query := "select repositories.*, tags.id as tag_id, tags.`name` as tag_name from repositories left join repositories_tags ON repositories.id = repositories_tags.repository_id left join tags on repositories_tags.tag_id = tags.id order"
+	query := "select repositories.*, tags.id as tag_id, tags.`name` as tag_name from repositories left join repositories_tags ON repositories.id = repositories_tags.repository_id left join tags on repositories_tags.tag_id = tags.id"
 
 	rows, err := gr.db.QueryContext(ctx, query)
 	if err != nil {

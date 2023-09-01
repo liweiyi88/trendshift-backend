@@ -10,13 +10,15 @@ type Repositories struct {
 	GhRepositoryRepo       *model.GhRepositoryRepo
 	TagRepo                *model.TagRepo
 	UserRepo               *model.UserRepo
+	StatsRepo              *model.StatsRepo
 }
 
 func InitRepositories(db database.DB) *Repositories {
 	return &Repositories{
 		TrendingRepositoryRepo: model.NewTrendingRepositoryRepo(db),
 		GhRepositoryRepo:       model.NewGhRepositoryRepo(db),
-		TagRepo:                model.NewTagRepositoryRepo(db),
+		TagRepo:                model.NewTagRepo(db),
 		UserRepo:               model.NewUserRepo(db),
+		StatsRepo:              model.NewStatsRepo(db),
 	}
 }

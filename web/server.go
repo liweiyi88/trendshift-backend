@@ -24,6 +24,7 @@ type Controllers struct {
 	repositoryController *controller.RepositoryController
 	tagController        *controller.TagController
 	securityController   *controller.SecurityController
+	statsController      *controller.StatsController
 }
 
 func initControllers(repositories *global.Repositories) *Controllers {
@@ -31,6 +32,7 @@ func initControllers(repositories *global.Repositories) *Controllers {
 		repositoryController: controller.NewRepositoryController(repositories.GhRepositoryRepo),
 		tagController:        controller.NewTagController(repositories.TagRepo),
 		securityController:   controller.NewSecurityController(repositories.UserRepo),
+		statsController:      controller.NewStatsController(repositories.StatsRepo),
 	}
 }
 
@@ -56,6 +58,7 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 
 	router.GET("/api/repositories", controllers.repositoryController.List)
 	router.GET("/api/tags", controllers.tagController.List)
+	router.GET("/api/stats/daily", controllers.statsController.GetDailyStats)
 
 	// Protected routes.
 	auth := router.Group("/api")

@@ -116,10 +116,12 @@ func (tr *TrendingRepositoryRepo) Save(ctx context.Context, trendingRepository T
 	return nil
 }
 
+// Update the trending repository as well as unlink the relationship between tranding repository and repository as the repository might be changed in the same rank.
+// Then we leave the linking service to re-link the repository properly.
 func (tr *TrendingRepositoryRepo) Update(ctx context.Context, trendingRepository TrendingRepository) error {
-	query := "UPDATE `trending_repositories` SET full_name = ?, rank = ?, language = ?, scraped_at = ?, trend_date = ? WHERE id = ?"
+	query := "UPDATE `trending_repositories` SET full_name = ?, rank = ?, language = ?, scraped_at = ?, trend_date = ?, repository_id = ? WHERE id = ?"
 
-	result, err := tr.db.ExecContext(ctx, query, trendingRepository.RepoFullName, trendingRepository.Rank, trendingRepository.Language, trendingRepository.ScrapedAt.Format("2006-01-02 15:04:05"), trendingRepository.TrendDate.Format("2006-01-02"), trendingRepository.Id)
+	result, err := tr.db.ExecContext(ctx, query, trendingRepository.RepoFullName, trendingRepository.Rank, trendingRepository.Language, trendingRepository.ScrapedAt.Format("2006-01-02 15:04:05"), trendingRepository.TrendDate.Format("2006-01-02"), nil, trendingRepository.Id)
 
 	if err != nil {
 		return fmt.Errorf("failed to run trending_repositories update query, trending repository id: %d, error: %v", trendingRepository.Id, err)

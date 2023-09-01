@@ -12,7 +12,7 @@ type TagRepo struct {
 	db database.DB
 }
 
-func NewTagRepositoryRepo(db database.DB) *TagRepo {
+func NewTagRepo(db database.DB) *TagRepo {
 	return &TagRepo{
 		db: db,
 	}
