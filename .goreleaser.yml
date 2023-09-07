@@ -1,0 +1,28 @@
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+dockers:
+  - use: buildx
+    goarch: arm64
+    dockerfile: Dockerfile.goreleaser
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+    image_templates:
+      - "julianli/gti-api:{{ .Tag }}-arm64"
+  - use: buildx
+    goarch: amd64
+    dockerfile: Dockerfile.goreleaser
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+    image_templates:
+      - julianli/gti-api
+      - "julianli/gti-api:{{ .Tag }}-amd64"
