@@ -9,17 +9,15 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/liweiyi88/gti/config"
 	"github.com/spf13/cobra"
 )
 
 //go:embed migrations/*.sql
 var fs embed.FS
 
-var dsn string
-
 func init() {
 	rootCmd.AddCommand(migrateCmd)
-	migrateCmd.Flags().StringVarP(&dsn, "dsn", "d", "mysql://root@tcp(localhost:3306)/gti?parseTime=true", "the database connection dsn")
 }
 
 var migrateCmd = &cobra.Command{
@@ -27,6 +25,8 @@ var migrateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Short: "Run database migration, valid args is either up or down",
 	Run: func(cmd *cobra.Command, args []string) {
+
+		config.Init()
 		action := args[0]
 
 		d, err := iofs.New(fs, "migrations")
@@ -34,7 +34,7 @@ var migrateCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		m, err := migrate.NewWithSourceInstance("iofs", d, dsn)
+		m, err := migrate.NewWithSourceInstance("iofs", d, "mysql://"+config.DatabaseDSN)
 		if err != nil {
 			log.Fatal(err)
 		}
