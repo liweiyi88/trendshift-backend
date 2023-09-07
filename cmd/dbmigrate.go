@@ -31,12 +31,12 @@ var migrateCmd = &cobra.Command{
 
 		d, err := iofs.New(fs, "migrations")
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("failed to create new iofs", err)
 		}
 
 		m, err := migrate.NewWithSourceInstance("iofs", d, "mysql://"+config.DatabaseDSN)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("failed to create new migration instance", err)
 		}
 
 		if action == "up" {
@@ -48,7 +48,7 @@ var migrateCmd = &cobra.Command{
 		}
 
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("migration failed: ", err)
 		}
 	},
 }
