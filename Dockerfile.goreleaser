@@ -1,6 +1,3 @@
-FROM alpine:latest as certs
-RUN apk update && apk add ca-certificates mysql-client postgresql-client --no-cache
-
+FROM scratch
 COPY gti /usr/local/bin/
-
 ENTRYPOINT ["/usr/local/bin/gti"]
