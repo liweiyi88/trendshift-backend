@@ -96,12 +96,12 @@ func (gr *GhRepositoryRepo) FindRepositoriesByNames(ctx context.Context, names [
 		return ghRepos, nil
 	}
 
-	query := fmt.Sprintf("SELECT * FROM repositories WHERE full_name in (\"%s\")", strings.Join(names, "\",\""))
+	query := fmt.Sprintf("SELECT * FROM repositories WHERE full_name IN ('%s')", strings.Join(names, "','"))
 
 	rows, err := gr.db.QueryContext(ctx, query)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to run the select query: %s, error: %v", query, err)
 	}
 
 	defer rows.Close()
