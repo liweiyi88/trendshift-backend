@@ -7,8 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const JWTCookieMaxAge = 60 * time.Minute
-const JWTCookieName = "gti_access_token"
+const JWTMaxAge = 60 * time.Minute
 
 var (
 	DatabaseDSN string
