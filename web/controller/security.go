@@ -19,6 +19,11 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type tokenResponse struct {
+	Token     string `json:"access_token"`
+	ExpiredAt int64  `json:"expired_at"`
+}
+
 func NewSecurityController(ur *model.UserRepo) *SecurityController {
 	return &SecurityController{
 		ur: ur,
@@ -49,7 +54,7 @@ func (sc *SecurityController) Login(c *gin.Context) {
 	}
 
 	jwtsvc := jwttoken.NewTokenService(config.SignIngKey)
-	tokenString, err := jwtsvc.Generate(user)
+	tokenString, expiredAt, err := jwtsvc.Generate(user)
 
 	if err != nil {
 		slog.Error(err.Error())
@@ -57,7 +62,8 @@ func (sc *SecurityController) Login(c *gin.Context) {
 		return
 	}
 
-	// Store the jwt as http-only cookie.
-	c.SetCookie(config.JWTCookieName, tokenString, int(config.JWTCookieMaxAge.Seconds()), "/", "localhost", false, true)
-	c.JSON(http.StatusOK, "")
+	var response tokenResponse
+	response.Token = tokenString
+	response.ExpiredAt = expiredAt
+	c.JSON(http.StatusOK, response)
 }

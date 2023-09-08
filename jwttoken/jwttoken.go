@@ -25,7 +25,7 @@ func NewTokenService(signingKey string) *TokenService {
 	}
 }
 
-func (t *TokenService) Generate(user model.User) (string, error) {
+func (t *TokenService) Generate(user model.User) (string, int64, error) {
 	expiredAt := time.Now().Add(config.JWTCookieMaxAge).Unix()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -36,7 +36,9 @@ func (t *TokenService) Generate(user model.User) (string, error) {
 		"role":    user.Role,
 	})
 
-	return token.SignedString(t.signingKey)
+	tokenString, err := token.SignedString(t.signingKey)
+
+	return tokenString, expiredAt, err
 }
 
 func (t *TokenService) Verify(tokenString string) (*jwt.Token, error) {
