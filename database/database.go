@@ -61,6 +61,10 @@ func GetInstance(ctx context.Context) *sql.DB {
 		db.SetConnMaxLifetime(3 * time.Minute)
 		db.SetMaxIdleConns(3)
 
+		// The current managed database only support 75 concurrent connections
+		// See https://docs.digitalocean.com/products/databases/mysql/details/limits/
+		db.SetMaxOpenConns(70)
+
 		ping(ctx)
 		slog.Info("database connected.")
 	})

@@ -11,6 +11,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/liweiyi88/gti/config"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slog"
 )
 
 //go:embed migrations/*.sql
@@ -38,6 +39,18 @@ var migrateCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal("failed to create new migration instance", err)
 		}
+
+		defer func() {
+			sourceErr, databaseErr := m.Close()
+
+			if sourceErr != nil {
+				slog.Error("failed to close resource, source error: %v", sourceErr)
+			}
+
+			if databaseErr != nil {
+				slog.Error("failed to close resource, database error error: %v", databaseErr)
+			}
+		}()
 
 		if action == "up" {
 			err = m.Up()
