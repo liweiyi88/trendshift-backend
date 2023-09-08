@@ -58,12 +58,12 @@ func GetInstance(ctx context.Context) *sql.DB {
 
 		// Avoid closing bad idle connection: unexpected read from socket, driver: bad connection error
 		// Reference: https://github.com/go-sql-driver/mysql/issues/1120#issuecomment-636795680
-		db.SetConnMaxLifetime(3 * time.Minute)
-		db.SetMaxIdleConns(3)
+		db.SetConnMaxLifetime(5 * time.Minute)
+		db.SetMaxIdleConns(5)
 
 		// The current managed database only support 75 concurrent connections
 		// See https://docs.digitalocean.com/products/databases/mysql/details/limits/
-		db.SetMaxOpenConns(70)
+		db.SetMaxOpenConns(25)
 
 		ping(ctx)
 		slog.Info("database connected.")
