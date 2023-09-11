@@ -35,10 +35,18 @@ func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository,
 	return ghr, nil
 }
 
-func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context) ([]GhRepository, error) {
-	query := "select repositories.*, tags.id as tag_id, tags.`name` as tag_name from repositories left join repositories_tags ON repositories.id = repositories_tags.repository_id left join tags on repositories_tags.tag_id = tags.id"
+func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) ([]GhRepository, error) {
+	var query string
+	var args []any
 
-	rows, err := gr.db.QueryContext(ctx, query)
+	if filter == "today" {
+		query = "select repositories.*, tags.id as tag_id, tags.`name` as tag_name  from repositories left join repositories_tags ON repositories.id = repositories_tags.repository_id left join tags on repositories_tags.tag_id = tags.id join trending_repositories on repositories.id = trending_repositories.repository_id where trend_date = ? group by repositories.full_name, tags.id"
+		args = append(args, time.Now().Format("2006-01-02"))
+	} else {
+		query = "select repositories.*, tags.id as tag_id, tags.`name` as tag_name from repositories left join repositories_tags ON repositories.id = repositories_tags.repository_id left join tags on repositories_tags.tag_id = tags.id"
+	}
+
+	rows, err := gr.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

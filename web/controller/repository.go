@@ -26,7 +26,9 @@ func NewRepositoryController(grr *model.GhRepositoryRepo) *RepositoryController 
 }
 
 func (rc *RepositoryController) List(c *gin.Context) {
-	ghRepositories, err := rc.grr.FindAllWithTags(c)
+	q := c.Query("q")
+
+	ghRepositories, err := rc.grr.FindAllWithTags(c, q)
 	if err != nil {
 		slog.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Error"})
