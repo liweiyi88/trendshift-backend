@@ -26,12 +26,6 @@ func NewTagController(tr *model.TagRepo) *TagController {
 func (tc *TagController) List(c *gin.Context) {
 	name := c.Query("name")
 
-	if strings.TrimSpace(name) == "" {
-		slog.Info("empty name")
-	} else {
-		slog.Info(name)
-	}
-
 	tags, err := tc.tr.Find(c, name)
 
 	if err != nil {
