@@ -138,14 +138,6 @@ func (gr *GhRepositoryRepo) Save(ctx context.Context, ghRepo GhRepository) (int6
 
 	createdAt, updatedAt := time.Now(), time.Now()
 
-	if !ghRepo.CreatedAt.IsZero() {
-		createdAt = ghRepo.CreatedAt
-	}
-
-	if !ghRepo.UpdatedAt.IsZero() {
-		updatedAt = ghRepo.UpdatedAt
-	}
-
 	result, err := gr.db.ExecContext(ctx, query,
 		ghRepo.FullName,
 		ghRepo.GhrId,
@@ -180,10 +172,6 @@ func (gr *GhRepositoryRepo) Update(ctx context.Context, ghRepo GhRepository) err
 	query := "UPDATE `repositories` SET full_name = ?, ghr_id = ?, stars = ?, forks = ?, language = ?, owner = ?, owner_avatar_url = ?, updated_at = ? WHERE id = ?"
 
 	updatedAt := time.Now()
-
-	if !ghRepo.UpdatedAt.IsZero() {
-		updatedAt = ghRepo.UpdatedAt
-	}
 
 	result, err := gr.db.ExecContext(ctx, query, ghRepo.FullName, ghRepo.GhrId, ghRepo.Stars, ghRepo.Forks, ghRepo.Language, ghRepo.Owner.Name, ghRepo.Owner.AvatarUrl, updatedAt.Format("2006-01-02 15:04:05"), ghRepo.Id)
 
