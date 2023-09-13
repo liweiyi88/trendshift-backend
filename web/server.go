@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/database"
+	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/global"
 	"github.com/liweiyi88/gti/web/controller"
 	"github.com/liweiyi88/gti/web/middleware"
@@ -28,7 +29,7 @@ type Controllers struct {
 
 func initControllers(repositories *global.Repositories) *Controllers {
 	return &Controllers{
-		repositoryController: controller.NewRepositoryController(repositories.GhRepositoryRepo),
+		repositoryController: controller.NewRepositoryController(repositories.GhRepositoryRepo, github.NewClient(config.GitHubToken)),
 		tagController:        controller.NewTagController(repositories.TagRepo),
 		securityController:   controller.NewSecurityController(repositories.UserRepo),
 		statsController:      controller.NewStatsController(repositories.StatsRepo),
@@ -42,6 +43,7 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 
 	gin.SetMode(config.GinMode)
 	router := gin.Default()
+	router.UseRawPath = true
 
 	router.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
@@ -50,6 +52,7 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 	router.POST("/login", controllers.securityController.Login)
 
 	router.GET("/api/repositories", controllers.repositoryController.List)
+	router.GET("/api/repositories/:name", controllers.repositoryController.Get)
 	router.GET("/api/tags", controllers.tagController.List)
 	router.GET("/api/stats/daily", controllers.statsController.GetDailyStats)
 

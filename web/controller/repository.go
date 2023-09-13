@@ -3,15 +3,18 @@ package controller
 import (
 	"database/sql"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/model"
 	"golang.org/x/exp/slog"
 )
 
 type RepositoryController struct {
-	grr *model.GhRepositoryRepo
+	grr      *model.GhRepositoryRepo
+	ghClient *github.Client
 }
 
 type AttachTagsRequest struct {
@@ -19,9 +22,10 @@ type AttachTagsRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
-func NewRepositoryController(grr *model.GhRepositoryRepo) *RepositoryController {
+func NewRepositoryController(grr *model.GhRepositoryRepo, ghClient *github.Client) *RepositoryController {
 	return &RepositoryController{
-		grr: grr,
+		grr:      grr,
+		ghClient: ghClient,
 	}
 }
 
@@ -34,6 +38,20 @@ func (rc *RepositoryController) List(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, ghRepositories)
+}
+
+func (rc *RepositoryController) Get(c *gin.Context) {
+	name, _ := url.QueryUnescape(c.Param("name"))
+
+	repository, err := rc.ghClient.GetRepository(c, name)
+
+	if err != nil {
+		slog.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, repository)
 }
 
 func (rc *RepositoryController) SaveTags(c *gin.Context) {
