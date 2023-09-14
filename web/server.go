@@ -54,7 +54,7 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 	router.GET("/api/repositories", controllers.repositoryController.List)
 	router.GET("/api/repositories/:name", controllers.repositoryController.Get)
 	router.GET("/api/tags", controllers.tagController.List)
-	router.GET("/api/stats/daily", controllers.statsController.GetDailyStats)
+	router.GET("/api/stats/trending-topics", controllers.statsController.GetTrendingTopicsStats)
 
 	// Protected routes.
 	auth := router.Group("/api")

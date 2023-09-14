@@ -23,8 +23,16 @@ func NewStatsRepo(db database.DB) *StatsRepo {
 	}
 }
 
-func (sr *StatsRepo) FindDailyStats(ctx context.Context) ([]DailyStat, error) {
-	query := "select count(*) as count, tags.`name`, trend_date from trending_repositories JOIN repositories ON trending_repositories.repository_id = repositories.id join repositories_tags on repositories_tags.repository_id = repositories.id join tags on tags.id = repositories_tags.tag_id group by tags.`name`, trend_date order by trend_date ASC"
+func (sr *StatsRepo) FindTrendingTopicsStats(ctx context.Context, dataRange int) ([]DailyStat, error) {
+
+	var query string
+
+	if dataRange > 0 {
+		since := time.Now().AddDate(0, 0, -dataRange)
+		query = "select count(*) as count, tags.`name`, trend_date from trending_repositories JOIN repositories ON trending_repositories.repository_id = repositories.id join repositories_tags on repositories_tags.repository_id = repositories.id join tags on tags.id = repositories_tags.tag_id where trend_date >'" + since.Format("2006-01-02") + "'  group by tags.`name`, trend_date order by trend_date ASC"
+	} else {
+		query = "select count(*) as count, tags.`name`, trend_date from trending_repositories JOIN repositories ON trending_repositories.repository_id = repositories.id join repositories_tags on repositories_tags.repository_id = repositories.id join tags on tags.id = repositories_tags.tag_id group by tags.`name`, trend_date order by trend_date ASC"
+	}
 
 	rows, err := sr.db.QueryContext(ctx, query)
 

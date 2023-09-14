@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/gti/model"
@@ -18,8 +19,21 @@ func NewStatsController(sr *model.StatsRepo) *StatsController {
 	}
 }
 
-func (sc *StatsController) GetDailyStats(c *gin.Context) {
-	stats, err := sc.sr.FindDailyStats(c)
+func (sc *StatsController) GetTrendingTopicsStats(c *gin.Context) {
+	dateRange := c.Query("range")
+
+	var r int
+	var err error
+
+	if dateRange != "" {
+		r, err = strconv.Atoi(dateRange)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+			return
+		}
+	}
+
+	stats, err := sc.sr.FindTrendingTopicsStats(c, r)
 
 	if err != nil {
 		slog.Error(err.Error())
