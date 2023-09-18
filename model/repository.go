@@ -23,7 +23,7 @@ type GhRepository struct {
 	Stars         int                `json:"watchers"`
 	Language      string             `json:"language"`
 	Description   dbutils.NullString `json:"description"`
-	DefaultBranch string             `json:"default_branch"`
+	DefaultBranch dbutils.NullString `json:"default_branch"`
 	Tags          []Tag              `json:"tags"`
 	CreatedAt     time.Time          `json:"created_at"`
 	UpdatedAt     time.Time          `json:"updated_at"`

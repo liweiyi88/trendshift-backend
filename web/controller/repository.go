@@ -43,7 +43,7 @@ func (rc *RepositoryController) List(c *gin.Context) {
 func (rc *RepositoryController) Get(c *gin.Context) {
 	name, _ := url.QueryUnescape(c.Param("name"))
 
-	repository, err := rc.ghClient.GetRepository(c, name)
+	repository, err := rc.grr.FindByName(c, name)
 
 	if err != nil {
 		slog.Error(err.Error())
