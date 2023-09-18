@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/database"
@@ -58,7 +59,20 @@ var repositoryCmd = &cobra.Command{
 
 		gh := github.NewClient(config.GitHubToken)
 
+		requests := make(chan model.GhRepository, len(repositories))
+
 		for _, repository := range repositories {
+			requests <- repository
+		}
+
+		close(requests)
+
+		// Follow the github best practice to avoid reaching secondary rate limit
+		// see https://docs.github.com/en/rest/guides/best-practices-for-using-the-rest-api?apiVersion=2022-11-28#dealing-with-secondary-rate-limits
+		limiter := time.Tick(200 * time.Millisecond)
+
+		for repository := range requests {
+			<-limiter
 			repository := repository
 
 			group.Go(func() error {
@@ -72,6 +86,7 @@ var repositoryCmd = &cobra.Command{
 				repository.Forks = ghRepository.Forks
 				repository.Stars = ghRepository.Stars
 				repository.Owner = ghRepository.Owner
+				repository.DefaultBranch = ghRepository.DefaultBranch
 
 				return repositoryRepo.Update(ctx, repository)
 			})
