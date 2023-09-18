@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
+	"github.com/liweiyi88/gti/dbutils"
 	"github.com/liweiyi88/gti/model"
 )
 
@@ -77,15 +78,17 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 			}
 
 			if language != "" {
-				trendingRepo.Language = sql.NullString{
-					String: strings.ToLower(language),
-					Valid:  true,
+				trendingRepo.Language = dbutils.NullString{
+					NullString: sql.NullString{String: strings.ToLower(language),
+						Valid: true,
+					},
 				}
 			} else {
-				trendingRepo.Language = sql.NullString{
-					String: "",
-					Valid:  false,
-				}
+				trendingRepo.Language = dbutils.NullString{
+					NullString: sql.NullString{
+						String: "",
+						Valid:  false,
+					}}
 			}
 
 			err = gh.trendRepo.Save(ctx, trendingRepo)

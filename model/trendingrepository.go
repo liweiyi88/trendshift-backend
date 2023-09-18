@@ -1,16 +1,17 @@
 package model
 
 import (
-	"database/sql"
 	"time"
+
+	"github.com/liweiyi88/gti/dbutils"
 )
 
 type TrendingRepository struct {
 	Id           int
 	RepoFullName string
-	Language     sql.NullString
+	Language     dbutils.NullString
 	Rank         int
 	ScrapedAt    time.Time
 	TrendDate    time.Time
-	RepositoryId sql.NullInt64
+	RepositoryId dbutils.NullInt64
 }
