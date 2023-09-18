@@ -2,13 +2,13 @@ package model
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/liweiyi88/gti/database"
+	"github.com/liweiyi88/gti/dbutils"
 )
 
 type GhRepositoryRepo struct {
@@ -28,11 +28,38 @@ func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository,
 
 	row := gr.db.QueryRowContext(ctx, query, id)
 
-	if err := row.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt); err != nil {
+	if err := row.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt, &ghr.Description); err != nil {
 		return ghr, err
 	}
 
 	return ghr, nil
+}
+
+func (gr *GhRepositoryRepo) FindAll(ctx context.Context) ([]GhRepository, error) {
+	rows, err := gr.db.QueryContext(ctx, "select * from repositories")
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var repositories []GhRepository
+
+	for rows.Next() {
+		var ghr GhRepository
+
+		if err := rows.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt, &ghr.Description); err != nil {
+			return nil, err
+		}
+
+		repositories = append(repositories, ghr)
+	}
+
+	if err = rows.Err(); err != nil {
+		return repositories, err
+	}
+
+	return repositories, nil
 }
 
 func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) ([]GhRepository, error) {
@@ -57,10 +84,10 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 
 	for rows.Next() {
 		var ghr GhRepository
-		var tagId sql.NullInt64
-		var tagName sql.NullString
+		var tagId dbutils.NullInt64
+		var tagName dbutils.NullString
 
-		if err := rows.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt, &tagId, &tagName); err != nil {
+		if err := rows.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt, &ghr.Description, &tagId, &tagName); err != nil {
 			return nil, err
 		}
 
@@ -117,7 +144,7 @@ func (gr *GhRepositoryRepo) FindRepositoriesByNames(ctx context.Context, names [
 	for rows.Next() {
 		var ghr GhRepository
 
-		if err := rows.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt); err != nil {
+		if err := rows.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt, &ghr.Description); err != nil {
 			return ghRepos, err
 		}
 
@@ -132,7 +159,7 @@ func (gr *GhRepositoryRepo) FindRepositoriesByNames(ctx context.Context, names [
 }
 
 func (gr *GhRepositoryRepo) Save(ctx context.Context, ghRepo GhRepository) (int64, error) {
-	query := "INSERT INTO `repositories` (`full_name`, `ghr_id`, stars, forks, `language`, `owner`, `owner_avatar_url`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	query := "INSERT INTO `repositories` (`full_name`, `ghr_id`, stars, forks, `language`, `owner`, `owner_avatar_url`, `description`, `created_at`, `updated_at`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
 	var lastInsertId int64
 
@@ -146,6 +173,7 @@ func (gr *GhRepositoryRepo) Save(ctx context.Context, ghRepo GhRepository) (int6
 		ghRepo.Language,
 		ghRepo.Owner.Name,
 		ghRepo.Owner.AvatarUrl,
+		ghRepo.GetDescription(),
 		createdAt.Format("2006-01-02 15:04:05"),
 		updatedAt.Format("2006-01-02 15:04:05"),
 	)
@@ -169,11 +197,11 @@ func (gr *GhRepositoryRepo) Save(ctx context.Context, ghRepo GhRepository) (int6
 }
 
 func (gr *GhRepositoryRepo) Update(ctx context.Context, ghRepo GhRepository) error {
-	query := "UPDATE `repositories` SET full_name = ?, ghr_id = ?, stars = ?, forks = ?, language = ?, owner = ?, owner_avatar_url = ?, updated_at = ? WHERE id = ?"
+	query := "UPDATE `repositories` SET full_name = ?, ghr_id = ?, stars = ?, forks = ?, language = ?, owner = ?, owner_avatar_url = ?, description = ?, updated_at = ? WHERE id = ?"
 
 	updatedAt := time.Now()
 
-	result, err := gr.db.ExecContext(ctx, query, ghRepo.FullName, ghRepo.GhrId, ghRepo.Stars, ghRepo.Forks, ghRepo.Language, ghRepo.Owner.Name, ghRepo.Owner.AvatarUrl, updatedAt.Format("2006-01-02 15:04:05"), ghRepo.Id)
+	result, err := gr.db.ExecContext(ctx, query, ghRepo.FullName, ghRepo.GhrId, ghRepo.Stars, ghRepo.Forks, ghRepo.Language, ghRepo.Owner.Name, ghRepo.Owner.AvatarUrl, ghRepo.GetDescription(), updatedAt.Format("2006-01-02 15:04:05"), ghRepo.Id)
 
 	if err != nil {
 		return fmt.Errorf("failed to run repositories update query, gh repo id: %d, error: %v", ghRepo.Id, err)

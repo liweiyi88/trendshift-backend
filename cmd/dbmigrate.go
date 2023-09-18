@@ -44,11 +44,11 @@ var migrateCmd = &cobra.Command{
 			sourceErr, databaseErr := m.Close()
 
 			if sourceErr != nil {
-				slog.Error("failed to close resource, source error: %v", sourceErr)
+				slog.Error("failed to close resource", slog.Any("source error", sourceErr))
 			}
 
 			if databaseErr != nil {
-				slog.Error("failed to close resource, database error error: %v", databaseErr)
+				slog.Error("failed to close resource", slog.Any("database error", databaseErr))
 			}
 		}()
 

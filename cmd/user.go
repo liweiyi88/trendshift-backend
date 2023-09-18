@@ -40,7 +40,7 @@ var userCmd = &cobra.Command{
 			err := db.Close()
 
 			if err != nil {
-				slog.Error("failed to close db: %v", err)
+				slog.Error("failed to close db", slog.Any("error", err))
 			}
 
 			stop()
