@@ -49,8 +49,31 @@ func (gr *GhRepositoryRepo) FindByName(ctx context.Context, name string) (GhRepo
 	return ghr, nil
 }
 
-func (gr *GhRepositoryRepo) FindAll(ctx context.Context) ([]GhRepository, error) {
-	rows, err := gr.db.QueryContext(ctx, "select * from repositories")
+func (gr *GhRepositoryRepo) FindAll(ctx context.Context, start string, end string, limit int) ([]GhRepository, error) {
+	var args []any
+	query := "select * from repositories"
+
+	var criteria []string
+	if start != "" {
+		criteria = append(criteria, "updated_at > ?")
+		args = append(args, start)
+	}
+
+	if end != "" {
+		criteria = append(criteria, "updated_at <= ?")
+		args = append(args, end)
+	}
+
+	if len(criteria) > 0 {
+		query = query + " where " + strings.Join(criteria, " and ")
+	}
+
+	if limit > 0 {
+		query = query + " LIMIT ?"
+		args = append(args, limit)
+	}
+
+	rows, err := gr.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -234,10 +257,14 @@ func (gr *GhRepositoryRepo) Update(ctx context.Context, ghRepo GhRepository) err
 		return fmt.Errorf("failed to run repositories update query, gh repo id: %d, error: %v", ghRepo.Id, err)
 	}
 
-	_, err = result.RowsAffected()
+	n, err := result.RowsAffected()
 
 	if err != nil {
 		return fmt.Errorf("repositories update rows affected returns error: %v", err)
+	}
+
+	if n != 1 {
+		return fmt.Errorf("unexpected number of rows affected after update: %d", n)
 	}
 
 	return nil

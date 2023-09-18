@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,8 +17,16 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+var start string
+var end string
+var limit int
+
 func init() {
 	rootCmd.AddCommand(repositoryCmd)
+
+	repositoryCmd.Flags().StringVarP(&start, "start", "s", "", "start")
+	repositoryCmd.Flags().StringVarP(&end, "end", "e", "", "end")
+	repositoryCmd.Flags().IntVarP(&limit, "limit", "l", 0, "limit")
 }
 
 var repositoryCmd = &cobra.Command{
@@ -28,6 +37,20 @@ var repositoryCmd = &cobra.Command{
 
 		ctx, stop := context.WithCancel(context.Background())
 		db := database.GetInstance(ctx)
+
+		if start != "" {
+			_, err := time.Parse("2006-01-02 15:04:05", start)
+			if err != nil {
+				log.Fatalf("failed to parse start time: %v", err)
+			}
+		}
+
+		if end != "" {
+			_, err := time.Parse("2006-01-02 15:04:05", end)
+			if err != nil {
+				log.Fatalf("failed to parse end time: %v", err)
+			}
+		}
 
 		defer func() {
 			err := db.Close()
@@ -48,7 +71,11 @@ var repositoryCmd = &cobra.Command{
 		}()
 
 		repositoryRepo := model.NewGhRepositoryRepo(db)
-		repositories, err := repositoryRepo.FindAll(ctx)
+
+		var repositories []model.GhRepository
+		var err error
+
+		repositories, err = repositoryRepo.FindAll(ctx, start, end, limit)
 
 		if err != nil {
 			slog.Error("could not retrieve repositories", slog.Any("error", err))
@@ -69,7 +96,7 @@ var repositoryCmd = &cobra.Command{
 
 		// Follow the github best practice to avoid reaching secondary rate limit
 		// see https://docs.github.com/en/rest/guides/best-practices-for-using-the-rest-api?apiVersion=2022-11-28#dealing-with-secondary-rate-limits
-		limiter := time.Tick(200 * time.Millisecond)
+		limiter := time.Tick(20 * time.Millisecond)
 
 		for repository := range requests {
 			<-limiter
