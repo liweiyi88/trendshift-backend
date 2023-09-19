@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -156,6 +157,159 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 
 	for _, k := range keys {
 		ghRepos = append(ghRepos, *repoMap[k])
+	}
+
+	return ghRepos, nil
+}
+
+// We have to have this query before calling FindTrendingRepositories as we sort the results by Go instead of sql.
+// Thus if we do not get rid of this query, the sorted result of FindTrendingRepositories when passing limit will be wrong.
+func (gr *GhRepositoryRepo) FindTrendingRepositoryIds(ctx context.Context, language string, limit int, dataRange int) ([]string, error) {
+	lang := strings.TrimSpace(language)
+
+	query := "select repositories.id, count(*) as count from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
+
+	qb := dbutils.NewQueryBuilder()
+	qb.Query(query)
+
+	// OrderBy DESC is a must, otherwise result could be wrong if pass range/limit.
+	qb.OrderBy("count", "DESC")
+
+	if lang != "" {
+		qb.Where("`trending_repositories`.`language` = ?", lang)
+	}
+
+	if dataRange > 0 {
+		since := time.Now().AddDate(0, 0, -dataRange)
+		qb.Where("`trending_repositories`.`trend_date` > ?", since.Format("2006-01-02"))
+	}
+
+	if limit > 0 {
+		qb.Limit(limit)
+	}
+
+	qb.GroupBy("repositories.id")
+
+	q, args := qb.GetQuery()
+
+	rows, err := gr.db.QueryContext(ctx, q, args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query trending repositories: %v", err)
+	}
+
+	defer rows.Close()
+
+	ids := make([]string, 0)
+	for rows.Next() {
+		var id int
+		var count int
+
+		if err := rows.Scan(&id, &count); err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, strconv.Itoa(id))
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ids, nil
+}
+
+func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, language string, limit int, dataRange int) ([]GhRepository, error) {
+	ids, err := gr.FindTrendingRepositoryIds(ctx, language, limit, dataRange)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to find trending repository ids: %v", err)
+	}
+
+	lang := strings.TrimSpace(language)
+
+	query := "select repositories.*, trending_repositories.trend_date, trending_repositories.`rank` from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
+
+	qb := dbutils.NewQueryBuilder()
+	qb.Query(query)
+
+	qb.Where(fmt.Sprintf("repositories.id IN ('%s')", strings.Join(ids, "','")), nil)
+
+	if lang != "" {
+		qb.Where("`trending_repositories`.`language` = ?", lang)
+	}
+
+	if dataRange > 0 {
+		since := time.Now().AddDate(0, 0, -dataRange)
+		qb.Where("`trending_repositories`.`trend_date` > ?", since.Format("2006-01-02"))
+	}
+
+	q, args := qb.GetQuery()
+
+	rows, err := gr.db.QueryContext(ctx, q, args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query trending repositories: %v", err)
+	}
+
+	defer rows.Close()
+
+	repoMap := make(map[int]*GhRepository, 0)
+
+	for rows.Next() {
+		var ghr GhRepository
+
+		var trending Trending
+
+		if err := rows.Scan(
+			&ghr.Id,
+			&ghr.GhrId,
+			&ghr.Stars,
+			&ghr.Forks,
+			&ghr.FullName,
+			&ghr.Language,
+			&ghr.Owner.Name,
+			&ghr.Owner.AvatarUrl,
+			&ghr.CreatedAt,
+			&ghr.UpdatedAt,
+			&ghr.Description,
+			&ghr.DefaultBranch,
+			&trending.TrendDate,
+			&trending.Rank); err != nil {
+			return nil, err
+		}
+
+		_, ok := repoMap[ghr.Id]
+
+		if !ok {
+			ghr.Trendings = append(ghr.Trendings, trending)
+			repoMap[ghr.Id] = &ghr
+		} else {
+			repoMap[ghr.Id].Trendings = append(repoMap[ghr.Id].Trendings, trending)
+		}
+	}
+
+	ghRepos := make([]GhRepository, 0, len(repoMap))
+
+	keys := make([]int, 0, len(repoMap))
+	for k := range repoMap {
+		keys = append(keys, k)
+	}
+
+	for _, k := range keys {
+		ghRepos = append(ghRepos, *repoMap[k])
+	}
+
+	sort.Slice(ghRepos, func(i, j int) bool {
+		if len(ghRepos[i].Trendings) != len(ghRepos[j].Trendings) {
+			return len(ghRepos[i].Trendings) > len(ghRepos[j].Trendings)
+		}
+
+		return ghRepos[i].GetTopTrending().Rank < ghRepos[j].GetTopTrending().Rank
+	})
+
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return ghRepos, nil

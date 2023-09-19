@@ -51,6 +51,7 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 
 	router.POST("/login", controllers.securityController.Login)
 
+	router.GET("/api/trending-repositories", controllers.repositoryController.GetTrendingRepositories)
 	router.GET("/api/repositories", controllers.repositoryController.List)
 	router.GET("/api/repositories/:name", controllers.repositoryController.Get)
 	router.GET("/api/tags", controllers.tagController.List)

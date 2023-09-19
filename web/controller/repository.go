@@ -40,6 +40,44 @@ func (rc *RepositoryController) List(c *gin.Context) {
 	c.JSON(http.StatusOK, ghRepositories)
 }
 
+func (rc *RepositoryController) GetTrendingRepositories(c *gin.Context) {
+	language, _ := url.QueryUnescape(c.Query("language"))
+	limitQuery, _ := url.QueryUnescape(c.Query("limit"))
+	dateRangeQuery := c.Query("range")
+
+	var limit int
+	var dateRange int
+	var err error
+
+	if dateRangeQuery != "" {
+		dateRange, err = strconv.Atoi(dateRangeQuery)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+			return
+		}
+	}
+
+	if limitQuery != "" {
+		limit, err = strconv.Atoi(limitQuery)
+
+		if err != nil {
+			slog.Error(err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request"})
+			return
+		}
+	}
+
+	repositories, err := rc.grr.FindTrendingRepositories(c, language, limit, dateRange)
+
+	if err != nil {
+		slog.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, repositories)
+}
+
 func (rc *RepositoryController) Get(c *gin.Context) {
 	name, _ := url.QueryUnescape(c.Param("name"))
 
@@ -79,7 +117,7 @@ func (rc *RepositoryController) SaveTags(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&requestTags); err != nil {
 		slog.Error(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request"})
 		return
 	}
 
