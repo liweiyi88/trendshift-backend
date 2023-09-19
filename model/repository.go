@@ -14,6 +14,11 @@ type Owner struct {
 	AvatarUrl string `json:"avatar_url"`
 }
 
+type Trending struct {
+	TrendDate string `json:"trend_date"`
+	Rank      int    `json:"rank"`
+}
+
 type GhRepository struct {
 	Id            int                `json:"repository_id"` // primary key saved in DB.
 	GhrId         int                `json:"id"`            // id from github repository api response.
@@ -25,8 +30,21 @@ type GhRepository struct {
 	Description   dbutils.NullString `json:"description"`
 	DefaultBranch dbutils.NullString `json:"default_branch"`
 	Tags          []Tag              `json:"tags"`
+	Trendings     []Trending         `json:"trendings"`
 	CreatedAt     time.Time          `json:"created_at"`
 	UpdatedAt     time.Time          `json:"updated_at"`
+}
+
+func (gr GhRepository) BestTrending() Trending {
+	var top Trending
+
+	for _, trending := range gr.Trendings {
+		if top.Rank == 0 || top.Rank > trending.Rank {
+			top = trending
+		}
+	}
+
+	return top
 }
 
 func (gr GhRepository) GetDescription() string {
