@@ -32,3 +32,19 @@ func TestQueryBuilder(t *testing.T) {
 		t.Errorf("unexpected args: %v", args...)
 	}
 }
+
+func TestReset(t *testing.T) {
+	qb := NewQueryBuilder()
+
+	qb.Query("select repositories.id, count(*) as count from repositories join trending_repositories on repositories.id = trending_repositories.repository_id")
+	qb.Where("`trending_repositories`.`language` = ?", "PHP")
+	qb.Where("`trending_repositories`.`trend_date` = ?", "2023-09-09")
+	qb.GroupBy("repositories.id")
+	qb.OrderBy("count", "DESC")
+
+	qb.reset()
+
+	if qb.args != nil || qb.criteria != nil || qb.groupBy != "" || qb.limit != "" || qb.orderBy != "" || qb.query != "" {
+		t.Errorf("query builder has not been rest: %+v", qb)
+	}
+}

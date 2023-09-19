@@ -35,15 +35,11 @@ type GhRepository struct {
 	UpdatedAt     time.Time          `json:"updated_at"`
 }
 
-func (gr GhRepository) GetTopTrending() Trending {
+func (gr GhRepository) BestTrending() Trending {
 	var top Trending
 
 	for _, trending := range gr.Trendings {
-		if top.Rank == 0 {
-			top = trending
-		}
-
-		if top.Rank > trending.Rank {
+		if top.Rank == 0 || top.Rank > trending.Rank {
 			top = trending
 		}
 	}

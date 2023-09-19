@@ -10,6 +10,7 @@ import (
 
 	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/database"
+	"github.com/liweiyi88/gti/dbutils"
 	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/model"
 	"github.com/spf13/cobra"
@@ -70,7 +71,7 @@ var repositoryCmd = &cobra.Command{
 			stop()
 		}()
 
-		repositoryRepo := model.NewGhRepositoryRepo(db)
+		repositoryRepo := model.NewGhRepositoryRepo(db, dbutils.NewQueryBuilder())
 
 		var repositories []model.GhRepository
 		var err error

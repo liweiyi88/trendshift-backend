@@ -14,11 +14,13 @@ import (
 
 type GhRepositoryRepo struct {
 	db database.DB
+	qb *dbutils.QueryBuilder
 }
 
-func NewGhRepositoryRepo(db database.DB) *GhRepositoryRepo {
+func NewGhRepositoryRepo(db database.DB, qb *dbutils.QueryBuilder) *GhRepositoryRepo {
 	return &GhRepositoryRepo{
 		db: db,
+		qb: qb,
 	}
 }
 
@@ -169,7 +171,7 @@ func (gr *GhRepositoryRepo) FindTrendingRepositoryIds(ctx context.Context, langu
 
 	query := "select repositories.id, count(*) as count from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
 
-	qb := dbutils.NewQueryBuilder()
+	qb := gr.qb
 	qb.Query(query)
 
 	// OrderBy DESC is a must, otherwise result could be wrong if pass range/limit.
@@ -230,7 +232,7 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, langua
 
 	query := "select repositories.*, trending_repositories.trend_date, trending_repositories.`rank` from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
 
-	qb := dbutils.NewQueryBuilder()
+	qb := gr.qb
 	qb.Query(query)
 
 	qb.Where(fmt.Sprintf("repositories.id IN ('%s')", strings.Join(ids, "','")), nil)
@@ -305,7 +307,7 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, langua
 			return len(ghRepos[i].Trendings) > len(ghRepos[j].Trendings)
 		}
 
-		return ghRepos[i].GetTopTrending().Rank < ghRepos[j].GetTopTrending().Rank
+		return ghRepos[i].BestTrending().Rank < ghRepos[j].BestTrending().Rank
 	})
 
 	if err = rows.Err(); err != nil {

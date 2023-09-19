@@ -17,7 +17,17 @@ func NewQueryBuilder() *QueryBuilder {
 	return &QueryBuilder{}
 }
 
+func (qb *QueryBuilder) reset() {
+	qb.args = nil
+	qb.criteria = nil
+	qb.groupBy = ""
+	qb.orderBy = ""
+	qb.query = ""
+	qb.limit = ""
+}
+
 func (qb *QueryBuilder) Query(query string) *QueryBuilder {
+	qb.reset()
 	qb.query = query
 	return qb
 }
