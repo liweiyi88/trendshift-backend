@@ -114,6 +114,7 @@ var repositoryCmd = &cobra.Command{
 				repository.Forks = ghRepository.Forks
 				repository.Stars = ghRepository.Stars
 				repository.Owner = ghRepository.Owner
+				repository.Language = ghRepository.Language // Language can also be updated
 				repository.DefaultBranch = ghRepository.DefaultBranch
 
 				return repositoryRepo.Update(ctx, repository)
