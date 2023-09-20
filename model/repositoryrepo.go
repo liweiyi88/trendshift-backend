@@ -294,9 +294,13 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, langua
 	ghRepos := make([]GhRepository, 0, len(repoMap))
 
 	keys := make([]int, 0, len(repoMap))
+
 	for k := range repoMap {
 		keys = append(keys, k)
 	}
+
+	// This sort keys is necessary to fix the position of the results.
+	sort.Ints(keys)
 
 	for _, k := range keys {
 		ghRepos = append(ghRepos, *repoMap[k])
