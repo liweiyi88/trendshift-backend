@@ -169,13 +169,15 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 func (gr *GhRepositoryRepo) FindTrendingRepositoryIds(ctx context.Context, language string, limit int, dataRange int) ([]string, error) {
 	lang := strings.TrimSpace(language)
 
-	query := "select repositories.id, count(*) as count from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
+	query := "select repositories.id, count(*) as count, min(trending_repositories.`rank`) as best_ranking from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
 
 	qb := gr.qb
 	qb.Query(query)
 
 	// OrderBy DESC is a must, otherwise result could be wrong if pass range/limit.
 	qb.OrderBy("count", "DESC")
+	qb.OrderBy("best_ranking", "ASC")
+	qb.OrderBy("repositories.id", "ASC")
 
 	if lang != "" {
 		qb.Where("`trending_repositories`.`language` = ?", lang)
@@ -206,8 +208,9 @@ func (gr *GhRepositoryRepo) FindTrendingRepositoryIds(ctx context.Context, langu
 	for rows.Next() {
 		var id int
 		var count int
+		var bestRanking int
 
-		if err := rows.Scan(&id, &count); err != nil {
+		if err := rows.Scan(&id, &count, &bestRanking); err != nil {
 			return nil, err
 		}
 
@@ -318,7 +321,7 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, langua
 			return iBestRanking < jBestRanking
 		}
 
-		return ghRepos[i].FullName < ghRepos[j].FullName
+		return ghRepos[i].Id < ghRepos[j].Id
 	})
 
 	if err = rows.Err(); err != nil {

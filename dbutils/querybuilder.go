@@ -8,7 +8,7 @@ type QueryBuilder struct {
 	args     []any
 	criteria []string
 	groupBy  string
-	orderBy  string
+	orderBy  []string
 	query    string
 	limit    string
 }
@@ -21,7 +21,7 @@ func (qb *QueryBuilder) reset() {
 	qb.args = nil
 	qb.criteria = nil
 	qb.groupBy = ""
-	qb.orderBy = ""
+	qb.orderBy = nil
 	qb.query = ""
 	qb.limit = ""
 }
@@ -48,15 +48,8 @@ func (qb *QueryBuilder) GroupBy(condition string) *QueryBuilder {
 	return qb
 }
 
-func (qb *QueryBuilder) OrderBy(condition string, order string) *QueryBuilder {
-	qb.orderBy = "ORDER BY " + condition
-
-	order = strings.ToLower(order)
-	if order == "asc" {
-		qb.orderBy = qb.orderBy + " ASC"
-	} else {
-		qb.orderBy = qb.orderBy + " DESC"
-	}
+func (qb *QueryBuilder) OrderBy(column string, order string) *QueryBuilder {
+	qb.orderBy = append(qb.orderBy, column+" "+order)
 
 	return qb
 }
@@ -80,8 +73,8 @@ func (qb *QueryBuilder) GetQuery() (string, []any) {
 		query = query + " " + qb.groupBy
 	}
 
-	if qb.orderBy != "" {
-		query = query + " " + qb.orderBy
+	if len(qb.orderBy) > 0 {
+		query = query + " ORDER BY " + strings.Join(qb.orderBy, ", ")
 	}
 
 	if qb.limit != "" {
