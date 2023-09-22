@@ -307,11 +307,18 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, langua
 	}
 
 	sort.Slice(ghRepos, func(i, j int) bool {
-		if len(ghRepos[i].Trendings) != len(ghRepos[j].Trendings) {
+		iTrendings, jTrendings := ghRepos[i].Trendings, ghRepos[j].Trendings
+		iBestRanking, jBestRanking := ghRepos[i].BestTrending().Rank, ghRepos[j].BestTrending().Rank
+
+		if len(iTrendings) != len(jTrendings) {
 			return len(ghRepos[i].Trendings) > len(ghRepos[j].Trendings)
 		}
 
-		return ghRepos[i].BestTrending().Rank < ghRepos[j].BestTrending().Rank
+		if iBestRanking != jBestRanking {
+			return iBestRanking < jBestRanking
+		}
+
+		return ghRepos[i].FullName < ghRepos[j].FullName
 	})
 
 	if err = rows.Err(); err != nil {
