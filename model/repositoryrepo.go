@@ -224,7 +224,7 @@ func (gr *GhRepositoryRepo) FindTrendingRepositoryIds(ctx context.Context, langu
 	return ids, nil
 }
 
-func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, language string, limit int, dataRange int) ([]GhRepository, error) {
+func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, language string, limit int, dataRange int) ([]*GhRepository, error) {
 	ids, err := gr.FindTrendingRepositoryIds(ctx, language, limit, dataRange)
 
 	if err != nil {
@@ -259,7 +259,7 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, langua
 
 	defer rows.Close()
 
-	repoMap := make(map[int]*GhRepository, 0)
+	collection := dbutils.NewCollectionMap[int, *GhRepository]()
 
 	for rows.Next() {
 		var ghr GhRepository
@@ -284,51 +284,21 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, langua
 			return nil, err
 		}
 
-		_, ok := repoMap[ghr.Id]
-
-		if !ok {
+		if !collection.Has(ghr.Id) {
 			ghr.Trendings = append(ghr.Trendings, trending)
-			repoMap[ghr.Id] = &ghr
+			collection.Set(ghr.Id, &ghr)
 		} else {
-			repoMap[ghr.Id].Trendings = append(repoMap[ghr.Id].Trendings, trending)
+			repository := collection.Get(ghr.Id)
+			repository.Trendings = append(repository.Trendings, trending)
+			collection.Set(ghr.Id, repository)
 		}
 	}
-
-	ghRepos := make([]GhRepository, 0, len(repoMap))
-
-	keys := make([]int, 0, len(repoMap))
-
-	for k := range repoMap {
-		keys = append(keys, k)
-	}
-
-	// This sort keys is necessary to fix the position of the results.
-	sort.Ints(keys)
-
-	for _, k := range keys {
-		ghRepos = append(ghRepos, *repoMap[k])
-	}
-
-	sort.Slice(ghRepos, func(i, j int) bool {
-		iTrendings, jTrendings := ghRepos[i].Trendings, ghRepos[j].Trendings
-		iBestRanking, jBestRanking := ghRepos[i].BestTrending().Rank, ghRepos[j].BestTrending().Rank
-
-		if len(iTrendings) != len(jTrendings) {
-			return len(ghRepos[i].Trendings) > len(ghRepos[j].Trendings)
-		}
-
-		if iBestRanking != jBestRanking {
-			return iBestRanking < jBestRanking
-		}
-
-		return ghRepos[i].Id < ghRepos[j].Id
-	})
 
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return ghRepos, nil
+	return collection.All(), nil
 }
 
 func (gr *GhRepositoryRepo) FindRepositoriesByNames(ctx context.Context, names []string) ([]GhRepository, error) {
