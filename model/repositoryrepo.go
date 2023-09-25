@@ -3,14 +3,18 @@ package model
 import (
 	"context"
 	"fmt"
-	"sort"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/liweiyi88/gti/database"
 	"github.com/liweiyi88/gti/dbutils"
 )
+
+type TrendingRepositoryResponse struct {
+	GhRepository
+	BestRanking   int `json:"best_ranking"`   // non db column field
+	FeaturedCount int `json:"featured_count"` // non db column field
+}
 
 type GhRepositoryRepo struct {
 	db database.DB
@@ -102,7 +106,7 @@ func (gr *GhRepositoryRepo) FindAll(ctx context.Context, start string, end strin
 	return repositories, nil
 }
 
-func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) ([]GhRepository, error) {
+func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) ([]*GhRepository, error) {
 	var query string
 	var args []any
 
@@ -120,7 +124,7 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 
 	defer rows.Close()
 
-	repoMap := make(map[int]*GhRepository, 0)
+	collectionMap := dbutils.NewCollectionMap[int, *GhRepository]()
 
 	for rows.Next() {
 		var ghr GhRepository
@@ -131,11 +135,9 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 			return nil, err
 		}
 
-		_, ok := repoMap[ghr.Id]
-
-		if !ok {
+		if !collectionMap.Has(ghr.Id) {
 			ghr.Tags = make([]Tag, 0)
-			repoMap[ghr.Id] = &ghr
+			collectionMap.Set(ghr.Id, &ghr)
 		}
 
 		if tagId.Valid && tagName.Valid {
@@ -144,43 +146,31 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 				Name: tagName.String,
 			}
 
-			repoMap[ghr.Id].Tags = append(repoMap[ghr.Id].Tags, tag)
+			repo := collectionMap.Get(ghr.Id)
+			repo.Tags = append(repo.Tags, tag)
+			collectionMap.Set(ghr.Id, repo)
 		}
 	}
 
-	ghRepos := make([]GhRepository, 0, len(repoMap))
-
-	keys := make([]int, 0, len(repoMap))
-	for k := range repoMap {
-		keys = append(keys, k)
-	}
-
-	sort.Ints(keys)
-
-	for _, k := range keys {
-		ghRepos = append(ghRepos, *repoMap[k])
-	}
-
-	return ghRepos, nil
+	return collectionMap.All(), nil
 }
 
-// We have to have this query before calling FindTrendingRepositories as we sort the results by Go instead of sql.
-// Thus if we do not get rid of this query, the sorted result of FindTrendingRepositories when passing limit will be wrong.
-func (gr *GhRepositoryRepo) FindTrendingRepositoryIds(ctx context.Context, language string, limit int, dataRange int) ([]string, error) {
+func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, language string, limit int, dataRange int) ([]TrendingRepositoryResponse, error) {
 	lang := strings.TrimSpace(language)
 
-	query := "select repositories.id, count(*) as count, min(trending_repositories.`rank`) as best_ranking from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
+	query := "select repositories.*, count(*) as count, min(trending_repositories.`rank`) as best_ranking from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
 
 	qb := gr.qb
 	qb.Query(query)
 
-	// OrderBy DESC is a must, otherwise result could be wrong if pass range/limit.
 	qb.OrderBy("count", "DESC")
 	qb.OrderBy("best_ranking", "ASC")
 	qb.OrderBy("repositories.id", "ASC")
 
 	if lang != "" {
 		qb.Where("`trending_repositories`.`language` = ?", lang)
+	} else {
+		qb.Where("`trending_repositories`.`language` is null", nil)
 	}
 
 	if dataRange > 0 {
@@ -204,101 +194,37 @@ func (gr *GhRepositoryRepo) FindTrendingRepositoryIds(ctx context.Context, langu
 
 	defer rows.Close()
 
-	ids := make([]string, 0)
-	for rows.Next() {
-		var id int
-		var count int
-		var bestRanking int
-
-		if err := rows.Scan(&id, &count, &bestRanking); err != nil {
-			return nil, err
-		}
-
-		ids = append(ids, strconv.Itoa(id))
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return ids, nil
-}
-
-func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, language string, limit int, dataRange int) ([]*GhRepository, error) {
-	ids, err := gr.FindTrendingRepositoryIds(ctx, language, limit, dataRange)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to find trending repository ids: %v", err)
-	}
-
-	lang := strings.TrimSpace(language)
-
-	query := "select repositories.*, trending_repositories.trend_date, trending_repositories.`rank` from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
-
-	qb := gr.qb
-	qb.Query(query)
-
-	qb.Where(fmt.Sprintf("repositories.id IN ('%s')", strings.Join(ids, "','")), nil)
-
-	if lang != "" {
-		qb.Where("`trending_repositories`.`language` = ?", lang)
-	}
-
-	if dataRange > 0 {
-		since := time.Now().AddDate(0, 0, -dataRange)
-		qb.Where("`trending_repositories`.`trend_date` > ?", since.Format("2006-01-02"))
-	}
-
-	q, args := qb.GetQuery()
-
-	rows, err := gr.db.QueryContext(ctx, q, args...)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to query trending repositories: %v", err)
-	}
-
-	defer rows.Close()
-
-	collection := dbutils.NewCollectionMap[int, *GhRepository]()
+	var repositories []TrendingRepositoryResponse
 
 	for rows.Next() {
-		var ghr GhRepository
-
-		var trending Trending
+		var trr TrendingRepositoryResponse
 
 		if err := rows.Scan(
-			&ghr.Id,
-			&ghr.GhrId,
-			&ghr.Stars,
-			&ghr.Forks,
-			&ghr.FullName,
-			&ghr.Language,
-			&ghr.Owner.Name,
-			&ghr.Owner.AvatarUrl,
-			&ghr.CreatedAt,
-			&ghr.UpdatedAt,
-			&ghr.Description,
-			&ghr.DefaultBranch,
-			&trending.TrendDate,
-			&trending.Rank); err != nil {
+			&trr.Id,
+			&trr.GhrId,
+			&trr.Stars,
+			&trr.Forks,
+			&trr.FullName,
+			&trr.Language,
+			&trr.Owner.Name,
+			&trr.Owner.AvatarUrl,
+			&trr.CreatedAt,
+			&trr.UpdatedAt,
+			&trr.Description,
+			&trr.DefaultBranch,
+			&trr.FeaturedCount,
+			&trr.BestRanking); err != nil {
 			return nil, err
-		}
 
-		if !collection.Has(ghr.Id) {
-			ghr.Trendings = append(ghr.Trendings, trending)
-			collection.Set(ghr.Id, &ghr)
-		} else {
-			repository := collection.Get(ghr.Id)
-			repository.Trendings = append(repository.Trendings, trending)
-			collection.Set(ghr.Id, repository)
 		}
+		repositories = append(repositories, trr)
 	}
 
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return collection.All(), nil
+	return repositories, nil
 }
 
 func (gr *GhRepositoryRepo) FindRepositoriesByNames(ctx context.Context, names []string) ([]GhRepository, error) {
