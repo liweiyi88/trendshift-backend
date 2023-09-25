@@ -35,18 +35,6 @@ type GhRepository struct {
 	UpdatedAt     time.Time          `json:"updated_at"`
 }
 
-func (gr GhRepository) BestTrending() Trending {
-	var top Trending
-
-	for _, trending := range gr.Trendings {
-		if top.Rank == 0 || top.Rank > trending.Rank {
-			top = trending
-		}
-	}
-
-	return top
-}
-
 func (gr GhRepository) GetDescription() string {
 	var description []rune
 	suffix := []rune("...")
