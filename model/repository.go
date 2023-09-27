@@ -15,8 +15,9 @@ type Owner struct {
 }
 
 type Trending struct {
-	TrendDate string `json:"trend_date"`
-	Rank      int    `json:"rank"`
+	TrendingLanguage dbutils.NullString `json:"trending_language"`
+	TrendDate        string             `json:"trend_date"`
+	Rank             int                `json:"rank"`
 }
 
 type GhRepository struct {

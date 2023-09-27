@@ -29,13 +29,40 @@ func NewGhRepositoryRepo(db database.DB, qb *dbutils.QueryBuilder) *GhRepository
 }
 
 func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository, error) {
-	query := "SELECT * FROM repositories WHERE id = ?"
+	qb := gr.qb
+	qb.Query("select repositories.*, trending_repositories.`trend_date`, trending_repositories.`rank`, trending_repositories.`language` as `trending_language` from repositories join trending_repositories on repositories.id = trending_repositories.repository_id")
+	qb.Where("repositories.id = ?", id)
+	query, args := qb.GetQuery()
 
 	var ghr GhRepository
 
-	row := gr.db.QueryRowContext(ctx, query, id)
+	rows, err := gr.db.QueryContext(ctx, query, args...)
 
-	if err := row.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt, &ghr.Description, &ghr.DefaultBranch); err != nil {
+	if err != nil {
+		return ghr, fmt.Errorf("failed to find repository by id: %v", err)
+	}
+
+	defer rows.Close()
+
+	collectionMap := dbutils.NewCollectionMap[int, *GhRepository]()
+
+	for rows.Next() {
+		var trending Trending
+
+		if err := rows.Scan(&ghr.Id, &ghr.GhrId, &ghr.Stars, &ghr.Forks, &ghr.FullName, &ghr.Language, &ghr.Owner.Name, &ghr.Owner.AvatarUrl, &ghr.CreatedAt, &ghr.UpdatedAt, &ghr.Description, &ghr.DefaultBranch, &trending.TrendDate, &trending.Rank, &trending.TrendingLanguage); err != nil {
+			return ghr, err
+		}
+
+		if !collectionMap.Has(ghr.Id) {
+			ghr.Trendings = append(ghr.Trendings, trending)
+			collectionMap.Set(ghr.Id, &ghr)
+		} else {
+			repository := collectionMap.Get(ghr.Id)
+			repository.Trendings = append(repository.Trendings, trending)
+		}
+	}
+
+	if err = rows.Err(); err != nil {
 		return ghr, err
 	}
 

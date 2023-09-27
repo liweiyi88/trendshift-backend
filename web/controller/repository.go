@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -79,9 +80,20 @@ func (rc *RepositoryController) GetTrendingRepositories(c *gin.Context) {
 }
 
 func (rc *RepositoryController) Get(c *gin.Context) {
-	name, _ := url.QueryUnescape(c.Param("name"))
+	id, err := strconv.Atoi(c.Param("id"))
 
-	repository, err := rc.grr.FindByName(c, name)
+	if err != nil {
+		slog.Error(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request"})
+		return
+	}
+
+	repository, err := rc.grr.FindById(c, id)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
+		return
+	}
 
 	if err != nil {
 		slog.Error(err.Error())

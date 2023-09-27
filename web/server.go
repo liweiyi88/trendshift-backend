@@ -53,7 +53,7 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 
 	router.GET("/api/trending-repositories", controllers.repositoryController.GetTrendingRepositories)
 	router.GET("/api/repositories", controllers.repositoryController.List)
-	router.GET("/api/repositories/:name", controllers.repositoryController.Get)
+	router.GET("/api/repositories/:id", controllers.repositoryController.Get)
 	router.GET("/api/tags", controllers.tagController.List)
 	router.GET("/api/stats/trending-topics", controllers.statsController.GetTrendingTopicsStats)
 
