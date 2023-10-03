@@ -6,10 +6,16 @@ import (
 
 	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/gti/search"
 	"golang.org/x/sync/errgroup"
 )
 
-func FetchRepositories(ctx context.Context, grr *model.GhRepositoryRepo, trr *model.TrendingRepositoryRepo, gh *github.Client) error {
+func FetchRepositories(
+	ctx context.Context,
+	grr *model.GhRepositoryRepo,
+	trr *model.TrendingRepositoryRepo,
+	gh *github.Client,
+	search search.Search) error {
 	unlinkedRepositories, err := trr.FindUnlinkedRepositories(ctx)
 
 	if err != nil {
@@ -22,7 +28,7 @@ func FetchRepositories(ctx context.Context, grr *model.GhRepositoryRepo, trr *mo
 		return fmt.Errorf("failed to query repositories by names: %v", err)
 	}
 
-	reposNotExist := make([]string, 0)
+	repoNamesNotExist := make([]string, 0)
 
 	// if repository exist in DB, then we update the relationship
 	for _, unlinkedRepo := range unlinkedRepositories {
@@ -40,13 +46,15 @@ func FetchRepositories(ctx context.Context, grr *model.GhRepositoryRepo, trr *mo
 		}
 
 		if !exist {
-			reposNotExist = append(reposNotExist, unlinkedRepo)
+			repoNamesNotExist = append(repoNamesNotExist, unlinkedRepo)
 		}
 	}
 
 	group, ctx := errgroup.WithContext(ctx)
 
-	for _, repo := range reposNotExist {
+	repositoriesNotExist := make([]model.GhRepository, 0)
+
+	for _, repo := range repoNamesNotExist {
 		repo := repo
 
 		group.Go(func() error {
@@ -60,10 +68,17 @@ func FetchRepositories(ctx context.Context, grr *model.GhRepositoryRepo, trr *mo
 			repository.Id = int(lastInsertId)
 
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to save repository")
 			}
 
-			return trr.LinkRepository(ctx, repository)
+			err = trr.LinkRepository(ctx, repository)
+
+			if err != nil {
+				return fmt.Errorf("failed to link repository: %v", err)
+			}
+
+			repositoriesNotExist = append(repositoriesNotExist, repository)
+			return nil
 		})
 	}
 
@@ -71,5 +86,5 @@ func FetchRepositories(ctx context.Context, grr *model.GhRepositoryRepo, trr *mo
 		return fmt.Errorf("failed to fetch and save github repository details: %v", err)
 	}
 
-	return nil
+	return search.UpsertRepositories(repositoriesNotExist...)
 }

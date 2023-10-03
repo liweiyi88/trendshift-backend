@@ -16,6 +16,7 @@ import (
 	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/global"
 	"github.com/liweiyi88/gti/scraper"
+	"github.com/liweiyi88/gti/search"
 	"github.com/liweiyi88/gti/trending"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
@@ -32,6 +33,7 @@ var scrapeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Init()
 
+		search := search.NewAlgoliasearch()
 		ctx, stop := context.WithCancel(context.Background())
 		db := database.GetInstance(ctx)
 
@@ -74,7 +76,13 @@ var scrapeCmd = &cobra.Command{
 		}
 
 		slog.Info("linking repositories...")
-		err := trending.FetchRepositories(ctx, repositories.GhRepositoryRepo, repositories.TrendingRepositoryRepo, github.NewClient(config.GitHubToken))
+
+		err := trending.FetchRepositories(
+			ctx,
+			repositories.GhRepositoryRepo,
+			repositories.TrendingRepositoryRepo,
+			github.NewClient(config.GitHubToken),
+			search)
 
 		if err != nil {
 			log.Fatalf("failed to link repositories trending page: %v", err)
