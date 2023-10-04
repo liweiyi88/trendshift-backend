@@ -63,7 +63,7 @@ var searchImportCmd = &cobra.Command{
 			var repositories []model.GhRepository
 			var err error
 
-			repositories, err = repositoryRepo.FindAll(ctx, "", "", 0)
+			repositories, err = repositoryRepo.FindAll(ctx)
 
 			if err != nil {
 				slog.Error("could not retrieve repositories", slog.Any("error", err))

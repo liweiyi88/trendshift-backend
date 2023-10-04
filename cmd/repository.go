@@ -13,6 +13,7 @@ import (
 	"github.com/liweiyi88/gti/dbutils"
 	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/gti/model/opt"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
 	"golang.org/x/sync/errgroup"
@@ -76,7 +77,12 @@ var repositoryCmd = &cobra.Command{
 		var repositories []model.GhRepository
 		var err error
 
-		repositories, err = repositoryRepo.FindAll(ctx, start, end, limit)
+		repositories, err = repositoryRepo.FindAll(
+			ctx,
+			opt.Start(start),
+			opt.End(end),
+			opt.Limit(limit),
+		)
 
 		if err != nil {
 			slog.Error("could not retrieve repositories", slog.Any("error", err))
