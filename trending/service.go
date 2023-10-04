@@ -68,7 +68,7 @@ func FetchRepositories(
 			repository.Id = int(lastInsertId)
 
 			if err != nil {
-				return fmt.Errorf("failed to save repository")
+				return fmt.Errorf("failed to save repository: %v", err)
 			}
 
 			err = trr.LinkRepository(ctx, repository)
