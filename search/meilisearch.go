@@ -23,6 +23,11 @@ func NewMeilisearch() *Meilisearch {
 	}
 }
 
+func (search *Meilisearch) SearchRepositories(query string, opt ...any) ([]map[string]interface{}, error) {
+	// TODO
+	return nil, nil
+}
+
 func (search *Meilisearch) UpsertRepositories(repositories ...model.GhRepository) error {
 	var documents []map[string]any
 
