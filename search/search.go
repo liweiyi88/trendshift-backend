@@ -11,3 +11,7 @@ type Search interface {
 	DeleteAllRepositories() error
 	SearchRepositories(query string, opt ...any) ([]map[string]interface{}, error)
 }
+
+func NewSearch() Search {
+	return NewAlgoliasearch()
+}

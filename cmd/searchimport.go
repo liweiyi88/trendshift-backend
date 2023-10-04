@@ -29,7 +29,7 @@ var searchImportCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Init()
 		ctx, stop := context.WithCancel(context.Background())
-		search := search.NewAlgoliasearch()
+		search := search.NewSearch()
 
 		db := database.GetInstance(ctx)
 

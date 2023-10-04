@@ -33,7 +33,7 @@ var scrapeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Init()
 
-		search := search.NewAlgoliasearch()
+		search := search.NewSearch()
 		ctx, stop := context.WithCancel(context.Background())
 		db := database.GetInstance(ctx)
 

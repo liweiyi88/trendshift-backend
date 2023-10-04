@@ -14,7 +14,7 @@ type SearchController struct {
 
 func NewSearchController() *SearchController {
 	return &SearchController{
-		search: search.NewAlgoliasearch(),
+		search: search.NewSearch(),
 	}
 }
 
