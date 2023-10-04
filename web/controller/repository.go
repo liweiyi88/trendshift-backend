@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/gti/model/opt"
 	"golang.org/x/exp/slog"
 )
 
@@ -68,7 +69,12 @@ func (rc *RepositoryController) GetTrendingRepositories(c *gin.Context) {
 		}
 	}
 
-	repositories, err := rc.grr.FindTrendingRepositories(c, language, limit, dateRange)
+	repositories, err := rc.grr.FindTrendingRepositories(
+		c,
+		opt.Language(language),
+		opt.Limit(limit),
+		opt.DateRange(dateRange),
+	)
 
 	if err != nil {
 		slog.Error(err.Error())

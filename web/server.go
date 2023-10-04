@@ -25,6 +25,7 @@ type Controllers struct {
 	tagController        *controller.TagController
 	securityController   *controller.SecurityController
 	statsController      *controller.StatsController
+	searchController     *controller.SearchController
 }
 
 func initControllers(repositories *global.Repositories) *Controllers {
@@ -33,6 +34,7 @@ func initControllers(repositories *global.Repositories) *Controllers {
 		tagController:        controller.NewTagController(repositories.TagRepo),
 		securityController:   controller.NewSecurityController(repositories.UserRepo),
 		statsController:      controller.NewStatsController(repositories.StatsRepo),
+		searchController:     controller.NewSearchController(),
 	}
 }
 
@@ -51,6 +53,7 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 
 	router.POST("/login", controllers.securityController.Login)
 
+	router.POST("/api/search", controllers.searchController.Search)
 	router.GET("/api/trending-repositories", controllers.repositoryController.GetTrendingRepositories)
 	router.GET("/api/repositories", controllers.repositoryController.List)
 	router.GET("/api/repositories/:id", controllers.repositoryController.Get)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/liweiyi88/gti/database"
 	"github.com/liweiyi88/gti/dbutils"
+	"github.com/liweiyi88/gti/model/opt"
 )
 
 type TrendingRepositoryResponse struct {
@@ -83,31 +84,29 @@ func (gr *GhRepositoryRepo) FindByName(ctx context.Context, name string) (GhRepo
 	return ghr, nil
 }
 
-func (gr *GhRepositoryRepo) FindAll(ctx context.Context, start string, end string, limit int) ([]GhRepository, error) {
-	var args []any
-	query := "select * from repositories"
+func (gr *GhRepositoryRepo) FindAll(ctx context.Context, opts ...any) ([]GhRepository, error) {
+	qb := gr.qb
+	qb.Query("select * from repositories")
 
-	var criteria []string
+	options := opt.ExtractOptions(opts...)
+
+	start, end, limit := options.Start, options.End, options.Limit
+
 	if start != "" {
-		criteria = append(criteria, "updated_at > ?")
-		args = append(args, start)
+		qb.Where("updated_at > ?", start)
 	}
 
 	if end != "" {
-		criteria = append(criteria, "updated_at <= ?")
-		args = append(args, end)
-	}
-
-	if len(criteria) > 0 {
-		query = query + " where " + strings.Join(criteria, " and ")
+		qb.Where("updated_at <= ?", end)
 	}
 
 	if limit > 0 {
-		query = query + " LIMIT ?"
-		args = append(args, limit)
+		qb.Limit(limit)
 	}
 
-	rows, err := gr.db.QueryContext(ctx, query, args...)
+	q, args := qb.GetQuery()
+
+	rows, err := gr.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -182,9 +181,7 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 	return collectionMap.All(), nil
 }
 
-func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, language string, limit int, dataRange int) ([]TrendingRepositoryResponse, error) {
-	lang := strings.TrimSpace(language)
-
+func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, opts ...any) ([]TrendingRepositoryResponse, error) {
 	query := "select repositories.*, count(*) as count, min(trending_repositories.`rank`) as best_ranking from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
 
 	qb := gr.qb
@@ -194,14 +191,17 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, langua
 	qb.OrderBy("best_ranking", "ASC")
 	qb.OrderBy("repositories.id", "ASC")
 
+	options := opt.ExtractOptions(opts...)
+	lang, dateRange, limit := options.Language, options.DateRange, options.Limit
+
 	if lang != "" {
 		qb.Where("`trending_repositories`.`language` = ?", lang)
 	} else {
 		qb.Where("`trending_repositories`.`language` is null", nil)
 	}
 
-	if dataRange > 0 {
-		since := time.Now().AddDate(0, 0, -dataRange)
+	if dateRange > 0 {
+		since := time.Now().AddDate(0, 0, -dateRange)
 		qb.Where("`trending_repositories`.`trend_date` > ?", since.Format("2006-01-02"))
 	}
 
