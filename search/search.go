@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"log/slog"
+
 	"github.com/liweiyi88/gti/database"
 	"github.com/liweiyi88/gti/model"
 	"github.com/liweiyi88/gti/utils/dbutils"
-	"golang.org/x/exp/slog"
 )
 
 const repositoryIndex = "repositories"

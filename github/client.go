@@ -9,8 +9,9 @@ import (
 	"net/http"
 	"strings"
 
+	"log/slog"
+
 	"github.com/liweiyi88/gti/model"
-	"golang.org/x/exp/slog"
 )
 
 var ErrNotFound = errors.New("not found on GitHub.")

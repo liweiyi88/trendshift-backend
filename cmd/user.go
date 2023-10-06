@@ -7,12 +7,13 @@ import (
 	"os/signal"
 	"syscall"
 
+	"log/slog"
+
 	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/database"
 	"github.com/liweiyi88/gti/global"
 	"github.com/liweiyi88/gti/model"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
 var username, password, role string

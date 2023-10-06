@@ -11,7 +11,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/liweiyi88/gti/config"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 //go:embed migrations/*.sql

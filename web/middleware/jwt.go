@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"strings"
 
+	"log/slog"
+
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/jwttoken"
-	"golang.org/x/exp/slog"
 )
 
 func JwtAuth() gin.HandlerFunc {

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"syscall"
 
+	"log/slog"
+
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/liweiyi88/gti/config"
@@ -19,7 +21,6 @@ import (
 	"github.com/liweiyi88/gti/search"
 	"github.com/liweiyi88/gti/trending"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 	"golang.org/x/sync/errgroup"
 )
 

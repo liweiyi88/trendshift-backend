@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"log/slog"
+
 	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/database"
 	"github.com/liweiyi88/gti/github"
@@ -18,7 +20,6 @@ import (
 	"github.com/liweiyi88/gti/utils/dbutils"
 	"github.com/liweiyi88/gti/utils/sliceutils"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 	"golang.org/x/sync/errgroup"
 )
 

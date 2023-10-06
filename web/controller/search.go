@@ -3,9 +3,10 @@ package controller
 import (
 	"net/http"
 
+	"log/slog"
+
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/gti/search"
-	"golang.org/x/exp/slog"
 )
 
 type SearchController struct {

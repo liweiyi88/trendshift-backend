@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"log/slog"
+
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/database"
@@ -17,7 +19,6 @@ import (
 	"github.com/liweiyi88/gti/global"
 	"github.com/liweiyi88/gti/web/controller"
 	"github.com/liweiyi88/gti/web/middleware"
-	"golang.org/x/exp/slog"
 )
 
 type Controllers struct {

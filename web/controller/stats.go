@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"log/slog"
+
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/gti/model"
-	"golang.org/x/exp/slog"
 )
 
 type StatsController struct {

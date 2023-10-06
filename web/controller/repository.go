@@ -7,11 +7,12 @@ import (
 	"net/url"
 	"strconv"
 
+	"log/slog"
+
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/model"
 	"github.com/liweiyi88/gti/model/opt"
-	"golang.org/x/exp/slog"
 )
 
 type RepositoryController struct {

@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"log/slog"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/liweiyi88/gti/config"
-	"golang.org/x/exp/slog"
 )
 
 var db *sql.DB

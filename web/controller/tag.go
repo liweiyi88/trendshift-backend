@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"strings"
 
+	"log/slog"
+
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/gti/model"
-	"golang.org/x/exp/slog"
 )
 
 type TagController struct {

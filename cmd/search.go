@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,7 +11,6 @@ import (
 	"github.com/liweiyi88/gti/database"
 	"github.com/liweiyi88/gti/search"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
 func init() {
