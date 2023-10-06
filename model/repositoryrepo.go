@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/dbutils"
 	"github.com/liweiyi88/gti/model/opt"
+	"github.com/liweiyi88/gti/utils/dbutils"
 )
 
 type TrendingRepositoryResponse struct {

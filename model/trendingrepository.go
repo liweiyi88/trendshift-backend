@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/liweiyi88/gti/dbutils"
+	"github.com/liweiyi88/gti/utils/dbutils"
 )
 
 type TrendingRepository struct {

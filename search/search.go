@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/dbutils"
 	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/gti/utils/dbutils"
 	"golang.org/x/exp/slog"
 )
 

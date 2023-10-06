@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,9 @@ import (
 	"github.com/liweiyi88/gti/model"
 	"golang.org/x/exp/slog"
 )
+
+var ErrNotFound = errors.New("not found on GitHub.")
+var ErrAccessBlocked = errors.New("repository access blocked.")
 
 // GitHub rest api client
 type Client struct {
@@ -72,6 +76,14 @@ func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (mod
 	))
 
 	if res.StatusCode != http.StatusOK {
+		if res.StatusCode == http.StatusNotFound {
+			return ghRepository, ErrNotFound
+		}
+
+		if res.StatusCode == http.StatusUnavailableForLegalReasons {
+			return ghRepository, ErrAccessBlocked
+		}
+
 		return ghRepository, fmt.Errorf("request %s is not successful, get status code: %d, body: %s", url, res.StatusCode, string(body))
 	}
 
