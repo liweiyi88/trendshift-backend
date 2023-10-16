@@ -46,7 +46,7 @@ func (ds *TrendingDeveloperScraper) Scrape(ctx context.Context, language string)
 	})
 
 	c.OnRequest(func(r *colly.Request) {
-		fmt.Printf("scraping: %s \n", r.URL.String())
+		// fmt.Printf("scraping: %s \n", r.URL.String())
 	})
 
 	c.Visit(ds.getTrendPageUrl(language))
