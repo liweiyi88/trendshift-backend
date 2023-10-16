@@ -12,7 +12,10 @@ import (
 	"github.com/liweiyi88/gti/utils/dbutils"
 )
 
-const repositoryIndex = "repositories"
+const (
+	repositoryIndex = "repositories"
+	developerIndex  = "developers"
+)
 
 const (
 	sync   = "sync"
@@ -20,8 +23,9 @@ const (
 )
 
 type Search interface {
+	UpsertDevelopers(developers ...model.Developer) error
 	UpsertRepositories(repositories ...model.GhRepository) error
-	DeleteAllRepositories() error
+	DeleteAll() error
 	SearchRepositories(query string, opt ...any) ([]map[string]interface{}, error)
 }
 
@@ -75,12 +79,12 @@ func (h *SearchHandler) sync(ctx context.Context) error {
 }
 
 func (h *SearchHandler) deleteAll() error {
-	err := h.search.DeleteAllRepositories()
+	err := h.search.DeleteAll()
 	if err != nil {
-		slog.Error("failed to delete all repositories from full text search", slog.Any("error", err))
+		slog.Error("failed to delete all repositories and developers from full text search", slog.Any("error", err))
 		return err
 	}
 
-	slog.Info("repositories have been deleted")
+	slog.Info("repositories and developers have been deleted")
 	return nil
 }

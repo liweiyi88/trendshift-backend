@@ -8,6 +8,8 @@ import (
 
 type Repositories struct {
 	TrendingRepositoryRepo *model.TrendingRepositoryRepo
+	TrendingDeveloperRepo  *model.TrendingDeveloperRepo
+	DeveloperRepo          model.DeveloperRepo
 	GhRepositoryRepo       *model.GhRepositoryRepo
 	TagRepo                *model.TagRepo
 	UserRepo               *model.UserRepo
@@ -19,6 +21,8 @@ func InitRepositories(db database.DB) *Repositories {
 
 	return &Repositories{
 		TrendingRepositoryRepo: model.NewTrendingRepositoryRepo(db),
+		TrendingDeveloperRepo:  model.NewTrendingDeveloperRepo(db),
+		DeveloperRepo:          *model.NewDeveloperRepo(db, qb),
 		GhRepositoryRepo:       model.NewGhRepositoryRepo(db, qb),
 		TagRepo:                model.NewTagRepo(db),
 		UserRepo:               model.NewUserRepo(db),

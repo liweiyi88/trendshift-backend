@@ -73,23 +73,23 @@ func (tr *TrendingRepositoryRepo) FindRankedTrendingRepoByDate(ctx context.Conte
 
 	defer rows.Close()
 
-	rankedTrends := make(map[int]TrendingRepository, 0)
+	rankedTrendingRepositories := make(map[int]TrendingRepository, 0)
 
 	for rows.Next() {
 		var tr TrendingRepository
 
 		if err := rows.Scan(&tr.Id, &tr.RepoFullName, &tr.Language, &tr.Rank, &tr.ScrapedAt, &tr.TrendDate, &tr.RepositoryId); err != nil {
-			return rankedTrends, err
+			return rankedTrendingRepositories, err
 		}
 
-		rankedTrends[tr.Rank] = tr
+		rankedTrendingRepositories[tr.Rank] = tr
 	}
 
 	if err = rows.Err(); err != nil {
-		return rankedTrends, err
+		return rankedTrendingRepositories, err
 	}
 
-	return rankedTrends, nil
+	return rankedTrendingRepositories, nil
 }
 
 func (tr *TrendingRepositoryRepo) Save(ctx context.Context, trendingRepository TrendingRepository) error {

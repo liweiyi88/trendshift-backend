@@ -16,20 +16,24 @@ import (
 const ghTrendScrapePath = ".Box-row .h3.lh-condensed a[href]"
 const ghTrendScrapeBaseURL = "https://github.com/trending"
 
-type GhTrendScraper struct {
+type TrendingRepositoryScraper struct {
 	url, path string
 	trendRepo *model.TrendingRepositoryRepo
 }
 
-func NewGhTrendScraper(trendRepo *model.TrendingRepositoryRepo) *GhTrendScraper {
-	return &GhTrendScraper{
+func NewTrendingRepositoryScraper(trendRepo *model.TrendingRepositoryRepo) *TrendingRepositoryScraper {
+	return &TrendingRepositoryScraper{
 		url:       ghTrendScrapeBaseURL,
 		path:      ghTrendScrapePath,
 		trendRepo: trendRepo,
 	}
 }
 
-func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
+func (gh *TrendingRepositoryScraper) GetType() string {
+	return "repository"
+}
+
+func (gh *TrendingRepositoryScraper) Scrape(ctx context.Context, language string) error {
 	c := colly.NewCollector()
 
 	repos := make([]string, 0)
@@ -98,7 +102,7 @@ func (gh *GhTrendScraper) Scrape(ctx context.Context, language string) error {
 	return err
 }
 
-func (gh *GhTrendScraper) getTrendPageUrl(language string) string {
+func (gh *TrendingRepositoryScraper) getTrendPageUrl(language string) string {
 	language = strings.TrimSpace(language)
 
 	if language != "" {
