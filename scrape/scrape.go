@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"log/slog"
 
-	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/global"
 	"github.com/liweiyi88/gti/scrape/scraper"
@@ -31,13 +29,16 @@ type Scraper interface {
 }
 
 type ScrapeHandler struct {
-	repositories *global.Repositories
-	search       search.Search
+	repositories  *global.Repositories
+	search        search.Search
+	githubFetcher *trending.GithubFetcher
 }
 
-func NewScrapeHandler(repositories *global.Repositories, search search.Search) *ScrapeHandler {
+func NewScrapeHandler(repositories *global.Repositories, search search.Search, gh *github.Client) *ScrapeHandler {
 	return &ScrapeHandler{
-		repositories, search,
+		repositories:  repositories,
+		search:        search,
+		githubFetcher: trending.NewGithubFetcher(gh, search, *repositories),
 	}
 }
 
@@ -50,6 +51,48 @@ func (s *ScrapeHandler) Handle(ctx context.Context, action string) error {
 	default:
 		return errors.New("invalid search action")
 	}
+}
+
+func (s *ScrapeHandler) saveTrendingRepositories(ctx context.Context) error {
+	scraper := scraper.NewTrendingRepositoryScraper(s.repositories.TrendingRepositoryRepo)
+
+	err := save(scraper, ctx)
+
+	if err != nil {
+		return err
+	}
+
+	slog.Info("linking repositories...")
+
+	err = s.githubFetcher.FetchRepositories(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to fetch and link repositories trending page: %v", err)
+	}
+
+	slog.Info("scrape completed.")
+	return nil
+}
+
+func (s *ScrapeHandler) saveTrendingDevelopers(ctx context.Context) error {
+	scraper := scraper.NewTrendingDeveloperScraper(s.repositories.TrendingDeveloperRepo)
+
+	err := save(scraper, ctx)
+
+	if err != nil {
+		return err
+	}
+
+	slog.Info("linking developers...")
+
+	err = s.githubFetcher.FetchDevelopers(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to fetch and link developers trending page: %v", err)
+	}
+
+	slog.Info("scrape completed.")
+	return nil
 }
 
 // Scrape repositories or developers rank from GitHub Trending page and save them in DB.
@@ -69,46 +112,5 @@ func save(scraper Scraper, ctx context.Context) error {
 		return fmt.Errorf("failed to scrape and save trending %s: %v", scraper.GetType(), err)
 	}
 
-	return nil
-}
-
-func (s *ScrapeHandler) saveTrendingRepositories(ctx context.Context) error {
-	scraper := scraper.NewTrendingRepositoryScraper(s.repositories.TrendingRepositoryRepo)
-
-	err := save(scraper, ctx)
-
-	if err != nil {
-		return err
-	}
-
-	slog.Info("linking repositories...")
-
-	err = trending.FetchRepositories(
-		ctx,
-		s.repositories.GhRepositoryRepo,
-		s.repositories.TrendingRepositoryRepo,
-		github.NewClient(config.GitHubToken),
-		s.search)
-
-	if err != nil {
-		log.Fatalf("failed to link repositories trending page: %v", err)
-	}
-
-	slog.Info("scrape completed.")
-	return nil
-}
-
-func (s *ScrapeHandler) saveTrendingDevelopers(ctx context.Context) error {
-	scraper := scraper.NewTrendingDeveloperScraper()
-
-	err := save(scraper, ctx)
-
-	if err != nil {
-		return err
-	}
-
-	// TODO link
-
-	slog.Info("scrape completed.")
 	return nil
 }

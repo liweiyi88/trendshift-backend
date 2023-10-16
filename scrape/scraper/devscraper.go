@@ -2,21 +2,27 @@ package scraper
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly/v2"
+	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/gti/utils/dbutils"
 )
 
 type TrendingDeveloperScraper struct {
-	url, path string
+	url, path             string
+	trendingDeveloperRepo *model.TrendingDeveloperRepo
 }
 
-func NewTrendingDeveloperScraper() *TrendingDeveloperScraper {
+func NewTrendingDeveloperScraper(trendingDeveloperRepo *model.TrendingDeveloperRepo) *TrendingDeveloperScraper {
 	return &TrendingDeveloperScraper{
-		url:  ghTrendScrapeBaseURL + "/developers",
-		path: ghTrendScrapePath,
+		url:                   ghTrendScrapeBaseURL + "/developers",
+		path:                  ghTrendScrapePath,
+		trendingDeveloperRepo: trendingDeveloperRepo,
 	}
 }
 
@@ -45,11 +51,53 @@ func (ds *TrendingDeveloperScraper) Scrape(ctx context.Context, language string)
 
 	c.Visit(ds.getTrendPageUrl(language))
 
-	fmt.Printf("%+v", developers)
+	now := time.Now()
 
-	// Save
+	rankedTrendingDevelopers, err := ds.trendingDeveloperRepo.FindRankedTrendingDevelopersByDate(ctx, now, language)
 
-	return nil
+	if err != nil {
+		return fmt.Errorf("failed to retrieve ranked trending developers: %v", err)
+	}
+
+	for index, developer := range developers {
+		rank := index + 1
+
+		trendingDeveloper, ok := rankedTrendingDevelopers[rank]
+
+		if ok {
+			// if trending developer exist, do update.
+			trendingDeveloper.Username = developer
+			trendingDeveloper.ScrapedAt, trendingDeveloper.TrendDate = now, now
+
+			ds.trendingDeveloperRepo.Update(ctx, trendingDeveloper)
+		} else {
+			// trending developer does not exist, do insert.
+			trendingDeveloper := model.TrendingDeveloper{
+				Username:  developer,
+				ScrapedAt: now,
+				TrendDate: now,
+				Rank:      rank,
+			}
+
+			if language != "" {
+				trendingDeveloper.Language = dbutils.NullString{
+					NullString: sql.NullString{String: strings.ToLower(language),
+						Valid: true,
+					},
+				}
+			} else {
+				trendingDeveloper.Language = dbutils.NullString{
+					NullString: sql.NullString{
+						String: "",
+						Valid:  false,
+					}}
+			}
+
+			err = ds.trendingDeveloperRepo.Save(ctx, trendingDeveloper)
+		}
+	}
+
+	return err
 }
 
 func (ds *TrendingDeveloperScraper) getTrendPageUrl(language string) string {

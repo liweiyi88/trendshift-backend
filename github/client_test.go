@@ -7,6 +7,34 @@ import (
 	"github.com/liweiyi88/gti/model"
 )
 
+func TestGetDeveloper(t *testing.T) {
+	client := Client{}
+
+	developer, err := client.GetDeveloper(context.Background(), "liweiyi88")
+	if err != nil {
+		t.Error(err)
+	}
+
+	expect := model.Developer{
+		Id:        0,
+		GhId:      7248260,
+		Username:  "liweiyi88",
+		AvatarUrl: "https://avatars.githubusercontent.com/u/7248260?v=4",
+	}
+
+	if developer.Username != expect.Username {
+		t.Errorf("expect: %v but got :%v", developer, expect)
+	}
+
+	if developer.GhId != expect.GhId {
+		t.Errorf("expect: %v but got :%v", developer, expect)
+	}
+
+	if developer.AvatarUrl != expect.AvatarUrl {
+		t.Errorf("expect: %v but got :%v", developer, expect)
+	}
+}
+
 func TestGetRepository(t *testing.T) {
 	client := Client{}
 

@@ -12,6 +12,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/liweiyi88/gti/config"
 	"github.com/liweiyi88/gti/database"
+	"github.com/liweiyi88/gti/github"
 	"github.com/liweiyi88/gti/global"
 	"github.com/liweiyi88/gti/scrape"
 	"github.com/liweiyi88/gti/search"
@@ -34,8 +35,9 @@ var scrapeCmd = &cobra.Command{
 		ctx, stop := context.WithCancel(context.Background())
 		db := database.GetInstance(ctx)
 		repositories := global.InitRepositories(db)
+		gh := github.NewClient(config.GitHubToken)
 
-		handler := scrape.NewScrapeHandler(repositories, search)
+		handler := scrape.NewScrapeHandler(repositories, search, gh)
 
 		defer func() {
 			err := db.Close()
