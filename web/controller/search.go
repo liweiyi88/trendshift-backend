@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
-	"github.com/liweiyi88/gti/search"
+	"github.com/liweiyi88/trendshift-backend/search"
 )
 
 type SearchController struct {

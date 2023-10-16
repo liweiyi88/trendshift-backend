@@ -7,9 +7,9 @@ import (
 
 	"log/slog"
 
-	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/model"
-	"github.com/liweiyi88/gti/utils/dbutils"
+	"github.com/liweiyi88/trendshift-backend/database"
+	"github.com/liweiyi88/trendshift-backend/model"
+	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
 )
 
 const (

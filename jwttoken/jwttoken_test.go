@@ -3,7 +3,7 @@ package jwttoken
 import (
 	"testing"
 
-	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/trendshift-backend/model"
 )
 
 func TestGenerate(t *testing.T) {

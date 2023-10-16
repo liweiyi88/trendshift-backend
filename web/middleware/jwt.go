@@ -9,8 +9,8 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
-	"github.com/liweiyi88/gti/config"
-	"github.com/liweiyi88/gti/jwttoken"
+	"github.com/liweiyi88/trendshift-backend/config"
+	"github.com/liweiyi88/trendshift-backend/jwttoken"
 )
 
 func JwtAuth() gin.HandlerFunc {

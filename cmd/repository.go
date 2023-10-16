@@ -12,13 +12,13 @@ import (
 
 	"log/slog"
 
-	"github.com/liweiyi88/gti/config"
-	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/github"
-	"github.com/liweiyi88/gti/model"
-	"github.com/liweiyi88/gti/model/opt"
-	"github.com/liweiyi88/gti/utils/dbutils"
-	"github.com/liweiyi88/gti/utils/sliceutils"
+	"github.com/liweiyi88/trendshift-backend/config"
+	"github.com/liweiyi88/trendshift-backend/database"
+	"github.com/liweiyi88/trendshift-backend/github"
+	"github.com/liweiyi88/trendshift-backend/model"
+	"github.com/liweiyi88/trendshift-backend/model/opt"
+	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
+	"github.com/liweiyi88/trendshift-backend/utils/sliceutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )

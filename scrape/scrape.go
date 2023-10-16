@@ -8,11 +8,11 @@ import (
 
 	"log/slog"
 
-	"github.com/liweiyi88/gti/github"
-	"github.com/liweiyi88/gti/global"
-	"github.com/liweiyi88/gti/scrape/scraper"
-	"github.com/liweiyi88/gti/search"
-	"github.com/liweiyi88/gti/trending"
+	"github.com/liweiyi88/trendshift-backend/github"
+	"github.com/liweiyi88/trendshift-backend/global"
+	"github.com/liweiyi88/trendshift-backend/scrape/scraper"
+	"github.com/liweiyi88/trendshift-backend/search"
+	"github.com/liweiyi88/trendshift-backend/trending"
 	"golang.org/x/sync/errgroup"
 )
 

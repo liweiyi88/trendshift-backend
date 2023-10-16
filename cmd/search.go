@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/liweiyi88/gti/config"
-	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/search"
+	"github.com/liweiyi88/trendshift-backend/config"
+	"github.com/liweiyi88/trendshift-backend/database"
+	"github.com/liweiyi88/trendshift-backend/search"
 	"github.com/spf13/cobra"
 )
 

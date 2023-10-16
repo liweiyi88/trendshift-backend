@@ -1,4 +1,4 @@
-module github.com/liweiyi88/gti
+module github.com/liweiyi88/trendshift-backend
 
 go 1.21
 

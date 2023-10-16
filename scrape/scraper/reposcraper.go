@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
-	"github.com/liweiyi88/gti/model"
-	"github.com/liweiyi88/gti/utils/dbutils"
+	"github.com/liweiyi88/trendshift-backend/model"
+	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
 )
 
 const ghTrendScrapePath = ".Box-row .h3.lh-condensed a[href]"

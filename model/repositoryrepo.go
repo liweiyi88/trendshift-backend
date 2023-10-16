@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/model/opt"
-	"github.com/liweiyi88/gti/utils/dbutils"
+	"github.com/liweiyi88/trendshift-backend/database"
+	"github.com/liweiyi88/trendshift-backend/model/opt"
+	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
 )
 
 type TrendingRepositoryResponse struct {

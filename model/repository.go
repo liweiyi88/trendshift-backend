@@ -4,7 +4,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/liweiyi88/gti/utils/dbutils"
+	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
 )
 
 const maxDescriptionLength = 900

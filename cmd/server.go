@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/liweiyi88/gti/config"
-	"github.com/liweiyi88/gti/web"
+	"github.com/liweiyi88/trendshift-backend/config"
+	"github.com/liweiyi88/trendshift-backend/web"
 	"github.com/spf13/cobra"
 )
 

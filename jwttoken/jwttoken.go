@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/liweiyi88/gti/config"
-	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/trendshift-backend/config"
+	"github.com/liweiyi88/trendshift-backend/model"
 )
 
 type AppClaim struct {

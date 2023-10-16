@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/liweiyi88/gti/github"
-	"github.com/liweiyi88/gti/global"
-	"github.com/liweiyi88/gti/model"
-	"github.com/liweiyi88/gti/search"
+	"github.com/liweiyi88/trendshift-backend/github"
+	"github.com/liweiyi88/trendshift-backend/global"
+	"github.com/liweiyi88/trendshift-backend/model"
+	"github.com/liweiyi88/trendshift-backend/search"
 	"golang.org/x/sync/errgroup"
 )
 
