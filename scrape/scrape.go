@@ -67,7 +67,7 @@ func (s *ScrapeHandler) saveTrendingRepositories(ctx context.Context) error {
 	err = s.githubFetcher.FetchRepositories(ctx)
 
 	if err != nil {
-		return fmt.Errorf("failed to fetch and link repositories trending page: %v", err)
+		return fmt.Errorf("failed to fetch and link repositories from trending page: %v", err)
 	}
 
 	slog.Info("scrape completed.")
@@ -88,7 +88,7 @@ func (s *ScrapeHandler) saveTrendingDevelopers(ctx context.Context) error {
 	err = s.githubFetcher.FetchDevelopers(ctx)
 
 	if err != nil {
-		return fmt.Errorf("failed to fetch and link developers trending page: %v", err)
+		return fmt.Errorf("failed to fetch and link developers from trending page: %v", err)
 	}
 
 	slog.Info("scrape completed.")
