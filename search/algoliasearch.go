@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
-	"github.com/liweiyi88/gti/config"
-	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/trendshift-backend/config"
+	"github.com/liweiyi88/trendshift-backend/model"
 )
 
 type repositoryDocument struct {

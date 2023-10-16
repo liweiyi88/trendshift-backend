@@ -9,10 +9,10 @@ import (
 
 	"log/slog"
 
-	"github.com/liweiyi88/gti/config"
-	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/global"
-	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/trendshift-backend/config"
+	"github.com/liweiyi88/trendshift-backend/database"
+	"github.com/liweiyi88/trendshift-backend/global"
+	"github.com/liweiyi88/trendshift-backend/model"
 	"github.com/spf13/cobra"
 )
 

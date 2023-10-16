@@ -11,7 +11,7 @@ import (
 
 	"log/slog"
 
-	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/trendshift-backend/model"
 )
 
 var ErrNotFound = errors.New("not found on GitHub.")

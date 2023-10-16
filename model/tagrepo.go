@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/liweiyi88/gti/database"
+	"github.com/liweiyi88/trendshift-backend/database"
 )
 
 type TagRepo struct {

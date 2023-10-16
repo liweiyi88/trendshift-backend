@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/trendshift-backend/model"
 )
 
 func TestGetDeveloper(t *testing.T) {

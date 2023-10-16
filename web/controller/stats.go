@@ -7,7 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
-	"github.com/liweiyi88/gti/model"
+	"github.com/liweiyi88/trendshift-backend/model"
 )
 
 type StatsController struct {

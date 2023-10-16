@@ -10,7 +10,7 @@ import (
 	"log/slog"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/liweiyi88/gti/config"
+	"github.com/liweiyi88/trendshift-backend/config"
 )
 
 var db *sql.DB

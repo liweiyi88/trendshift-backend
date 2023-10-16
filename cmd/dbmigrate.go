@@ -9,7 +9,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-	"github.com/liweiyi88/gti/config"
+	"github.com/liweiyi88/trendshift-backend/config"
 	"github.com/spf13/cobra"
 	"log/slog"
 )

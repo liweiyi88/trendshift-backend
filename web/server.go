@@ -13,12 +13,12 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
-	"github.com/liweiyi88/gti/config"
-	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/github"
-	"github.com/liweiyi88/gti/global"
-	"github.com/liweiyi88/gti/web/controller"
-	"github.com/liweiyi88/gti/web/middleware"
+	"github.com/liweiyi88/trendshift-backend/config"
+	"github.com/liweiyi88/trendshift-backend/database"
+	"github.com/liweiyi88/trendshift-backend/github"
+	"github.com/liweiyi88/trendshift-backend/global"
+	"github.com/liweiyi88/trendshift-backend/web/controller"
+	"github.com/liweiyi88/trendshift-backend/web/middleware"
 )
 
 type Controllers struct {

@@ -10,12 +10,12 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
-	"github.com/liweiyi88/gti/config"
-	"github.com/liweiyi88/gti/database"
-	"github.com/liweiyi88/gti/github"
-	"github.com/liweiyi88/gti/global"
-	"github.com/liweiyi88/gti/scrape"
-	"github.com/liweiyi88/gti/search"
+	"github.com/liweiyi88/trendshift-backend/config"
+	"github.com/liweiyi88/trendshift-backend/database"
+	"github.com/liweiyi88/trendshift-backend/github"
+	"github.com/liweiyi88/trendshift-backend/global"
+	"github.com/liweiyi88/trendshift-backend/scrape"
+	"github.com/liweiyi88/trendshift-backend/search"
 	"github.com/spf13/cobra"
 )
 
