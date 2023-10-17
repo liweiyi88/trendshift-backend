@@ -23,32 +23,6 @@ type DB interface {
 	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
 }
 
-type Database struct {
-	client *sql.DB
-}
-
-func (db *Database) ExecContext(ctx context.Context, query string, values ...any) (sql.Result, error) {
-	statement, err := db.client.PrepareContext(ctx, query)
-
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := statement.ExecContext(ctx, values)
-	statement.Close()
-
-	return result, err
-}
-
-func (db *Database) QueryRowContext(ctx context.Context, query string, values ...any) *sql.Row {
-	return db.client.QueryRowContext(ctx, query, values...)
-}
-
-func (db *Database) QueryContext(ctx context.Context, query string, values ...any) (*sql.Rows, error) {
-	rows, err := db.client.QueryContext(ctx, query, values...)
-	return rows, err
-}
-
 func GetInstance(ctx context.Context) *sql.DB {
 	once.Do(func() {
 		var err error

@@ -8,6 +8,7 @@ import (
 
 	"log/slog"
 
+	"github.com/liweiyi88/trendshift-backend/config"
 	"github.com/liweiyi88/trendshift-backend/github"
 	"github.com/liweiyi88/trendshift-backend/global"
 	"github.com/liweiyi88/trendshift-backend/scrape/scraper"
@@ -20,8 +21,6 @@ const (
 	repository = "repository"
 	developer  = "developer"
 )
-
-var languageToScrape = []string{"", "javascript", "python", "go", "java", "php", "c++", "c", "typescript", "ruby", "c#", "rust"}
 
 type Scraper interface {
 	Scrape(ctx context.Context, language string) error
@@ -99,9 +98,9 @@ func (s *ScrapeHandler) saveTrendingDevelopers(ctx context.Context) error {
 func save(scraper Scraper, ctx context.Context) error {
 	group, groupCtx := errgroup.WithContext(ctx)
 
-	slog.Info(fmt.Sprintf("Scraping %s for languages: %s...", scraper.GetType(), strings.Join(languageToScrape, ",")))
+	slog.Info(fmt.Sprintf("Scraping %s for languages: %s...", scraper.GetType(), strings.Join(config.LanguageToScrape, ",")))
 
-	for _, language := range languageToScrape {
+	for _, language := range config.LanguageToScrape {
 		language := language
 		group.Go(func() error {
 			return scraper.Scrape(groupCtx, language)

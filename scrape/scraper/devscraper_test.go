@@ -10,8 +10,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func TestScrape(t *testing.T) {
-	scraper := NewTrendingRepositoryScraper(&model.TrendingRepositoryRepo{})
+func TestGetTrendPageUrl(t *testing.T) {
+	scraper := NewTrendingDeveloperScraper(&model.TrendingDeveloperRepo{})
 
 	all, golang, php := scraper.getTrendPageUrl(""), scraper.getTrendPageUrl("Go"), scraper.getTrendPageUrl("PHP")
 
@@ -21,15 +21,15 @@ func TestScrape(t *testing.T) {
 	}{
 		{
 			actual: all,
-			want:   "https://github.com/trending",
+			want:   "https://github.com/trending/developers",
 		},
 		{
 			actual: golang,
-			want:   "https://github.com/trending/Go?since=daily",
+			want:   "https://github.com/trending/developers/Go?since=daily",
 		},
 		{
 			actual: php,
-			want:   "https://github.com/trending/PHP?since=daily",
+			want:   "https://github.com/trending/developers/PHP?since=daily",
 		},
 	}
 
@@ -43,10 +43,10 @@ func TestScrape(t *testing.T) {
 
 	for _, language := range config.LanguageToScrape {
 		group.Go(func() error {
-			repositories := scraper.scrape(ctx, language)
+			developers := scraper.scrape(ctx, language)
 
-			if len(repositories) == 0 {
-				return fmt.Errorf("could not scrape trending repositories from GitHub, language: %s", language)
+			if len(developers) == 0 {
+				return fmt.Errorf("could not scrape trending developers from GitHub, language: %s", language)
 			}
 
 			return nil

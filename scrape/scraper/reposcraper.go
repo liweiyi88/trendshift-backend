@@ -3,6 +3,7 @@ package scraper
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -29,11 +30,17 @@ func NewTrendingRepositoryScraper(trendRepo *model.TrendingRepositoryRepo) *Tren
 	}
 }
 
-func (gh *TrendingRepositoryScraper) GetType() string {
-	return "repository"
+func (gh *TrendingRepositoryScraper) getTrendPageUrl(language string) string {
+	language = strings.TrimSpace(language)
+
+	if language != "" {
+		return fmt.Sprintf("%s/%s?since=daily", gh.url, url.QueryEscape(language))
+	}
+
+	return gh.url
 }
 
-func (gh *TrendingRepositoryScraper) Scrape(ctx context.Context, language string) error {
+func (gh *TrendingRepositoryScraper) scrape(ctx context.Context, language string) []string {
 	c := colly.NewCollector()
 
 	repos := make([]string, 0)
@@ -54,6 +61,10 @@ func (gh *TrendingRepositoryScraper) Scrape(ctx context.Context, language string
 
 	c.Visit(gh.getTrendPageUrl(language))
 
+	return repos
+}
+
+func (gh *TrendingRepositoryScraper) saveRepositories(ctx context.Context, language string, repositories []string) error {
 	now := time.Now()
 	rankedTrendingRepo, err := gh.trendRepo.FindRankedTrendingRepoByDate(ctx, now, language)
 
@@ -61,7 +72,7 @@ func (gh *TrendingRepositoryScraper) Scrape(ctx context.Context, language string
 		return fmt.Errorf("failed to retrieve ranked trending repositoris: %v", err)
 	}
 
-	for index, repo := range repos {
+	for index, repo := range repositories {
 		rank := index + 1
 
 		trendingRepo, ok := rankedTrendingRepo[rank]
@@ -96,18 +107,26 @@ func (gh *TrendingRepositoryScraper) Scrape(ctx context.Context, language string
 			}
 
 			err = gh.trendRepo.Save(ctx, trendingRepo)
+
+			if err != nil {
+				return fmt.Errorf("failed to save trending repository: %s to db: %v", trendingRepo.RepoFullName, err)
+			}
 		}
 	}
 
-	return err
+	return nil
 }
 
-func (gh *TrendingRepositoryScraper) getTrendPageUrl(language string) string {
-	language = strings.TrimSpace(language)
+func (gh *TrendingRepositoryScraper) Scrape(ctx context.Context, language string) error {
+	repos := gh.scrape(ctx, language)
 
-	if language != "" {
-		return fmt.Sprintf("%s/%s?since=daily", gh.url, url.QueryEscape(language))
+	if len(repos) == 0 {
+		return errors.New("could not scrape any trending repository data")
 	}
 
-	return gh.url
+	return gh.saveRepositories(ctx, language, repos)
+}
+
+func (gh *TrendingRepositoryScraper) GetType() string {
+	return "repository"
 }

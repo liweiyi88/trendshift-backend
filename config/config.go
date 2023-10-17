@@ -9,6 +9,8 @@ import (
 
 const JWTMaxAge = 60 * time.Minute
 
+var LanguageToScrape = []string{"", "javascript", "python", "go", "java", "php", "c++", "c", "typescript", "ruby", "c#", "rust"}
+
 var (
 	DatabaseDSN          string
 	GitHubToken          string

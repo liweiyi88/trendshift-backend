@@ -3,6 +3,7 @@ package scraper
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -26,11 +27,19 @@ func NewTrendingDeveloperScraper(trendingDeveloperRepo *model.TrendingDeveloperR
 	}
 }
 
-func (ds *TrendingDeveloperScraper) GetType() string {
-	return "developer"
+// Get the trending developer page for scraping.
+func (ds *TrendingDeveloperScraper) getTrendPageUrl(language string) string {
+	language = strings.TrimSpace(language)
+
+	if language != "" {
+		return fmt.Sprintf("%s/%s?since=daily", ds.url, url.QueryEscape(language))
+	}
+
+	return ds.url
 }
 
-func (ds *TrendingDeveloperScraper) Scrape(ctx context.Context, language string) error {
+// Scrape the trending developer data from GitHub
+func (ds *TrendingDeveloperScraper) scrape(ctx context.Context, language string) []string {
 	c := colly.NewCollector()
 
 	developers := make([]string, 0)
@@ -51,6 +60,11 @@ func (ds *TrendingDeveloperScraper) Scrape(ctx context.Context, language string)
 
 	c.Visit(ds.getTrendPageUrl(language))
 
+	return developers
+}
+
+// Save trending developers to DB.
+func (ds *TrendingDeveloperScraper) saveDevelopers(ctx context.Context, language string, developers []string) error {
 	now := time.Now()
 
 	rankedTrendingDevelopers, err := ds.trendingDeveloperRepo.FindRankedTrendingDevelopersByDate(ctx, now, language)
@@ -94,18 +108,28 @@ func (ds *TrendingDeveloperScraper) Scrape(ctx context.Context, language string)
 			}
 
 			err = ds.trendingDeveloperRepo.Save(ctx, trendingDeveloper)
+
+			if err != nil {
+				return fmt.Errorf("failed to save trending developer: %s to db: %v", trendingDeveloper.Username, err)
+			}
 		}
 	}
 
-	return err
+	return nil
 }
 
-func (ds *TrendingDeveloperScraper) getTrendPageUrl(language string) string {
-	language = strings.TrimSpace(language)
+// Scrape and save trending developers to DB.
+func (ds *TrendingDeveloperScraper) Scrape(ctx context.Context, language string) error {
+	developers := ds.scrape(ctx, language)
 
-	if language != "" {
-		return fmt.Sprintf("%s/%s?since=daily", ds.url, url.QueryEscape(language))
+	if len(developers) == 0 {
+		return errors.New("could not scrape any trending developer data")
 	}
 
-	return ds.url
+	return ds.saveDevelopers(ctx, language, developers)
+}
+
+// Get the scraper type.
+func (ds *TrendingDeveloperScraper) GetType() string {
+	return "developer"
 }
