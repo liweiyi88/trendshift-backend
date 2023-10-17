@@ -42,6 +42,7 @@ func TestGetTrendPageUrl(t *testing.T) {
 	group, ctx := errgroup.WithContext(context.Background())
 
 	for _, language := range config.LanguageToScrape {
+		language := language
 		group.Go(func() error {
 			developers := scraper.scrape(ctx, language)
 
@@ -51,9 +52,9 @@ func TestGetTrendPageUrl(t *testing.T) {
 
 			return nil
 		})
+	}
 
-		if err := group.Wait(); err != nil {
-			t.Error(err)
-		}
+	if err := group.Wait(); err != nil {
+		t.Error(err)
 	}
 }
