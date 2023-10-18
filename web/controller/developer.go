@@ -30,7 +30,7 @@ func (dc *DeveloperController) Get(c *gin.Context) {
 		return
 	}
 
-	repository, err := dc.dr.FindById(c, id) 
+	developer, err := dc.dr.FindById(c, id) 
 
 	if errors.Is(err, sql.ErrNoRows) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
@@ -43,7 +43,7 @@ func (dc *DeveloperController) Get(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, repository)
+	c.JSON(http.StatusOK, developer)
 }
 
 func (dc *DeveloperController) GetTrendingDevelopers(c *gin.Context) {
