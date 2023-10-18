@@ -22,6 +22,7 @@ type Developer struct {
 	PublicGists     int                `json:"public_gists"`
 	Followers       int                `json:"followers"`
 	Following       int                `json:"following"`
+	Trendings       []Trending         `json:"trendings"`
 	CreatedAt       time.Time          `json:"created_at"`
 	UpdatedAt       time.Time          `json:"updated_at"`
 }
