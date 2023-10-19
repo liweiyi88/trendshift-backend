@@ -10,14 +10,12 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
-	"github.com/liweiyi88/trendshift-backend/github"
 	"github.com/liweiyi88/trendshift-backend/model"
 	"github.com/liweiyi88/trendshift-backend/model/opt"
 )
 
 type RepositoryController struct {
-	grr      *model.GhRepositoryRepo
-	ghClient *github.Client
+	grr *model.GhRepositoryRepo
 }
 
 type AttachTagsRequest struct {
@@ -25,10 +23,9 @@ type AttachTagsRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
-func NewRepositoryController(grr *model.GhRepositoryRepo, ghClient *github.Client) *RepositoryController {
+func NewRepositoryController(grr *model.GhRepositoryRepo) *RepositoryController {
 	return &RepositoryController{
-		grr:      grr,
-		ghClient: ghClient,
+		grr,
 	}
 }
 

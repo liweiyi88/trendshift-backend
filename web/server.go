@@ -15,13 +15,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/trendshift-backend/config"
 	"github.com/liweiyi88/trendshift-backend/database"
-	"github.com/liweiyi88/trendshift-backend/github"
 	"github.com/liweiyi88/trendshift-backend/global"
 	"github.com/liweiyi88/trendshift-backend/web/controller"
 	"github.com/liweiyi88/trendshift-backend/web/middleware"
 )
 
 type Controllers struct {
+	developerController  *controller.DeveloperController
 	repositoryController *controller.RepositoryController
 	tagController        *controller.TagController
 	securityController   *controller.SecurityController
@@ -31,7 +31,8 @@ type Controllers struct {
 
 func initControllers(repositories *global.Repositories) *Controllers {
 	return &Controllers{
-		repositoryController: controller.NewRepositoryController(repositories.GhRepositoryRepo, github.NewClient(config.GitHubToken)),
+		developerController:  controller.NewDeveloperController(&repositories.DeveloperRepo),
+		repositoryController: controller.NewRepositoryController(repositories.GhRepositoryRepo),
 		tagController:        controller.NewTagController(repositories.TagRepo),
 		securityController:   controller.NewSecurityController(repositories.UserRepo),
 		statsController:      controller.NewStatsController(repositories.StatsRepo),
@@ -55,7 +56,9 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 	router.POST("/login", controllers.securityController.Login)
 
 	router.POST("/api/search", controllers.searchController.Search)
+	router.GET("/api/trending-developers", controllers.developerController.GetTrendingDevelopers)
 	router.GET("/api/trending-repositories", controllers.repositoryController.GetTrendingRepositories)
+	router.GET("/api/developers/:id", controllers.developerController.Get)
 	router.GET("/api/repositories", controllers.repositoryController.List)
 	router.GET("/api/repositories/:id", controllers.repositoryController.Get)
 	router.GET("/api/tags", controllers.tagController.List)
