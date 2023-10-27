@@ -23,9 +23,10 @@ func NewMeilisearch() *Meilisearch {
 	}
 }
 
-func (search *Meilisearch) SearchRepositories(query string, opt ...any) ([]map[string]interface{}, error) {
+func (search *Meilisearch) Search(query string, opts ...any) (SearchResults, error) {
+	var searchResults SearchResults
 	// @TODO
-	return nil, nil
+	return searchResults, nil
 }
 
 func (search *Meilisearch) UpsertDevelopers(developers ...model.Developer) error {

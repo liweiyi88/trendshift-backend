@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/algolia/algoliasearch-client-go/v3/algolia/opt"
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"github.com/liweiyi88/trendshift-backend/config"
 	"github.com/liweiyi88/trendshift-backend/model"
@@ -29,17 +30,32 @@ func NewAlgoliasearch() *Algoliasearch {
 	}
 }
 
-func (search *Algoliasearch) SearchRepositories(query string, opt ...any) ([]map[string]interface{}, error) {
-	res, err := search.client.InitIndex(repositoryIndex).Search(query, opt...)
+func (s *Algoliasearch) Search(query string, opts ...any) (SearchResults, error) {
+	var searchResults SearchResults
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to search repositories: %v", err)
+	queries := []search.IndexedQuery{
+		search.NewIndexedQuery(repositoryIndex, opt.Query(query), opt.HitsPerPage(5)),
+		search.NewIndexedQuery(developerIndex, opt.Query(query), opt.HitsPerPage(5)),
 	}
 
-	return res.Hits, nil
+	res, err := s.client.MultipleQueries(queries, "")
+
+	if err != nil {
+		return searchResults, fmt.Errorf("failed to search all: %v", err)
+	}
+
+	for _, result := range res.Results {
+		if result.Index == repositoryIndex {
+			searchResults.Repositories = append(searchResults.Repositories, result.Hits...)
+		} else if result.Index == developerIndex {
+			searchResults.Developers = append(searchResults.Developers, result.Hits...)
+		}
+	}
+
+	return searchResults, nil
 }
 
-func (search *Algoliasearch) UpsertDevelopers(developers ...model.Developer) error {
+func (s *Algoliasearch) UpsertDevelopers(developers ...model.Developer) error {
 	var documents []developerDocument
 
 	for _, developer := range developers {
@@ -52,7 +68,7 @@ func (search *Algoliasearch) UpsertDevelopers(developers ...model.Developer) err
 	}
 
 	if len(documents) > 0 {
-		_, err := search.client.InitIndex(developerIndex).SaveObjects(documents)
+		_, err := s.client.InitIndex(developerIndex).SaveObjects(documents)
 
 		if err != nil {
 			return fmt.Errorf("failed to save developer obejcts to algolia search: %v", err)
@@ -62,7 +78,7 @@ func (search *Algoliasearch) UpsertDevelopers(developers ...model.Developer) err
 	return nil
 }
 
-func (search *Algoliasearch) UpsertRepositories(repositories ...model.GhRepository) error {
+func (s *Algoliasearch) UpsertRepositories(repositories ...model.GhRepository) error {
 	var documents []repositoryDocument
 
 	for _, repository := range repositories {
@@ -75,7 +91,7 @@ func (search *Algoliasearch) UpsertRepositories(repositories ...model.GhReposito
 	}
 
 	if len(documents) > 0 {
-		_, err := search.client.InitIndex(repositoryIndex).SaveObjects(documents)
+		_, err := s.client.InitIndex(repositoryIndex).SaveObjects(documents)
 
 		if err != nil {
 			return fmt.Errorf("failed to save repositoriy obejcts to algolia search: %v", err)
@@ -85,14 +101,14 @@ func (search *Algoliasearch) UpsertRepositories(repositories ...model.GhReposito
 	return nil
 }
 
-func (search *Algoliasearch) DeleteAll() error {
-	_, err := search.client.InitIndex(repositoryIndex).ClearObjects()
+func (s *Algoliasearch) DeleteAll() error {
+	_, err := s.client.InitIndex(repositoryIndex).ClearObjects()
 
 	if err != nil {
 		return fmt.Errorf("failed to clear repository obejcts in algolia search: %v", err)
 	}
 
-	_, err = search.client.InitIndex(developerIndex).ClearObjects()
+	_, err = s.client.InitIndex(developerIndex).ClearObjects()
 
 	if err != nil {
 		return fmt.Errorf("failed to clear developer objects in algolia search: %v", err)

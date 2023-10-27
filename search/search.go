@@ -17,6 +17,11 @@ const (
 	developerIndex  = "developers"
 )
 
+type SearchResults struct {
+	Repositories []map[string]interface{} `json:"repositories"`
+	Developers   []map[string]interface{} `json:"developers"`
+}
+
 const (
 	sync   = "sync"
 	delete = "delete"
@@ -26,7 +31,7 @@ type Search interface {
 	UpsertDevelopers(developers ...model.Developer) error
 	UpsertRepositories(repositories ...model.GhRepository) error
 	DeleteAll() error
-	SearchRepositories(query string, opt ...any) ([]map[string]interface{}, error)
+	Search(query string, opts ...any) (SearchResults, error)
 }
 
 func NewSearch() Search {

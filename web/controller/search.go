@@ -20,7 +20,7 @@ func NewSearchController() *SearchController {
 }
 
 func (search *SearchController) Search(c *gin.Context) {
-	results, err := search.search.SearchRepositories(c.Query("q"))
+	results, err := search.search.Search(c.Query("q"))
 
 	if err != nil {
 		slog.Error(err.Error())
