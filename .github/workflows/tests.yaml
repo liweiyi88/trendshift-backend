@@ -1,0 +1,56 @@
+name: tests
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  workflow_dispatch:
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.21.3]
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: ikalnytskyi/action-setup-postgres@v4
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - uses: actions/checkout@v3
+
+      - name: Go vulnerabilities check
+        id: govulncheck
+        uses: golang/govulncheck-action@v1
+
+      - run: |
+          go test -v -cover ./... -coverprofile coverage.out -coverpkg ./...
+
+      - name: Go Coverage Badge
+        uses: tj-actions/coverage-badge-go@v1
+        if: ${{ runner.os == 'ubuntu-latest' && matrix.go == '1.21.3' }}
+        with:
+          green: 80
+          filename: coverage.out
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        id: auto-commit-action
+        with:
+          commit_message: Apply Code Coverage Badge
+          skip_fetch: true
+          skip_checkout: true
+          file_pattern: ./README.md
+
+      - name: Push Changes
+        if: steps.auto-commit-action.outputs.changes_detected == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ github.token }}
+          branch: ${{ github.ref }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.out
