@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +11,7 @@ import (
 
 	"log/slog"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/liweiyi88/trendshift-backend/config"
 	"github.com/liweiyi88/trendshift-backend/database"
 	"github.com/liweiyi88/trendshift-backend/github"
@@ -38,36 +38,42 @@ func init() {
 var repositoryCmd = &cobra.Command{
 	Use:   "repository",
 	Short: "Fetch latest repostiory details from GitHub and update db records",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		config.Init()
 
 		ctx, stop := context.WithCancel(context.Background())
 		db := database.GetInstance(ctx)
 		gh := github.NewClient(config.GitHubToken)
 
+		defer func() {
+			err := db.Close()
+
+			if err != nil {
+				slog.Error("failed to close db", slog.Any("error", err))
+				sentry.CaptureException(err)
+			}
+
+			stop()
+			sentry.Flush(2 * time.Second)
+		}()
+
 		if start != "" {
 			_, err := time.Parse("2006-01-02 15:04:05", start)
 			if err != nil {
-				log.Fatalf("failed to parse start time: %v", err)
+				slog.Error("failed to parse start time", slog.Any("error", err))
+				sentry.CaptureException(err)
+				return
 			}
 		}
 
 		if end != "" {
 			_, err := time.Parse("2006-01-02 15:04:05", end)
 			if err != nil {
-				log.Fatalf("failed to parse end time: %v", err)
+				slog.Error("failed to parse end time", slog.Any("error", err))
+				sentry.CaptureException(err)
+				return
 			}
 		}
-
-		defer func() {
-			err := db.Close()
-
-			if err != nil {
-				slog.Error("failed to close db", slog.Any("error", err))
-			}
-
-			stop()
-		}()
 
 		appSignal := make(chan os.Signal, 3)
 		signal.Notify(appSignal, os.Interrupt, syscall.SIGTERM)
@@ -87,7 +93,9 @@ var repositoryCmd = &cobra.Command{
 		)
 
 		if err != nil {
-			return fmt.Errorf("failed to find repositories: %v", err)
+			slog.Error("failed to find repositories", slog.Any("error", err))
+			sentry.CaptureException(err)
+			return
 		}
 
 		chulks := sliceutils.Chunk[model.GhRepository](repositories, 200)
@@ -96,14 +104,15 @@ var repositoryCmd = &cobra.Command{
 			err := syncRepositories(ctx, chulk, *repositoryRepo, gh)
 
 			if err != nil {
-				return fmt.Errorf("could not sync repositories: %v", err)
+				slog.Error("could not sync repositories", slog.Any("error", err))
+				sentry.CaptureException(err)
+				return
 			}
 
 			slog.Info(fmt.Sprintf("completed batch update for %d repositories", len(chulk)))
 		}
 
 		slog.Info("repositories update completed.")
-		return nil
 	},
 }
 

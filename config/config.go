@@ -1,9 +1,11 @@
 package config
 
 import (
+	"log"
 	"os"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/joho/godotenv"
 )
 
@@ -35,4 +37,14 @@ func Init() {
 
 	AlgoliasearchAppId = os.Getenv("ALGOLIASEARCH_APPID")
 	AlgoliasearchApiKey = os.Getenv("ALGOLIASEARCH_APIKEY")
+
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              os.Getenv("SENTRY_DSN"),
+		AttachStacktrace: true,
+		TracesSampleRate: 1.0,
+	})
+
+	if err != nil {
+		log.Fatalf("sentry.Init: %s", err)
+	}
 }

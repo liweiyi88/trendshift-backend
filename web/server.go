@@ -12,6 +12,7 @@ import (
 
 	"log/slog"
 
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/trendshift-backend/config"
 	"github.com/liweiyi88/trendshift-backend/database"
@@ -47,6 +48,12 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 
 	gin.SetMode(config.GinMode)
 	router := gin.Default()
+
+	// Use sentry to capture errors.
+	router.Use(sentrygin.New(sentrygin.Options{
+		Repanic: true,
+	}))
+
 	router.UseRawPath = true
 
 	router.GET("/ping", func(c *gin.Context) {
