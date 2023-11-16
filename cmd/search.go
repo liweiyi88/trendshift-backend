@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/liweiyi88/trendshift-backend/config"
 	"github.com/liweiyi88/trendshift-backend/database"
 	"github.com/liweiyi88/trendshift-backend/search"
@@ -21,7 +23,7 @@ var searchCmd = &cobra.Command{
 	Use:   "search [sync|delete]",
 	Short: "sync or delete repositories in full text search",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		action := args[0]
 		config.Init()
 		ctx, stop := context.WithCancel(context.Background())
@@ -33,9 +35,11 @@ var searchCmd = &cobra.Command{
 
 			if err != nil {
 				slog.Error("failed to close db", slog.Any("error", err))
+				sentry.CaptureException(err)
 			}
 
 			stop()
+			sentry.Flush(2 * time.Second)
 		}()
 
 		appSignal := make(chan os.Signal, 3)
@@ -46,6 +50,11 @@ var searchCmd = &cobra.Command{
 			stop()
 		}()
 
-		return handler.Handle(ctx, action)
+		err := handler.Handle(ctx, action)
+
+		if err != nil {
+			slog.Error("failed to handle action", slog.Any("error", err))
+			sentry.CaptureException(err)
+		}
 	},
 }

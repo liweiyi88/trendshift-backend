@@ -5,9 +5,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"log/slog"
 
+	"github.com/getsentry/sentry-go"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/liweiyi88/trendshift-backend/config"
@@ -27,7 +29,7 @@ var scrapeCmd = &cobra.Command{
 	Use:   "scrape [repository|developer]",
 	Short: "Scrape trending repositories or trending developers form GitHub trending page.",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		action := args[0]
 		config.Init()
 
@@ -36,7 +38,6 @@ var scrapeCmd = &cobra.Command{
 		db := database.GetInstance(ctx)
 		repositories := global.InitRepositories(db)
 		gh := github.NewClient(config.GitHubToken)
-
 		handler := scrape.NewScrapeHandler(repositories, search, gh)
 
 		defer func() {
@@ -44,9 +45,11 @@ var scrapeCmd = &cobra.Command{
 
 			if err != nil {
 				slog.Error("failed to close db", slog.Any("error", err))
+				sentry.CaptureException(err)
 			}
 
 			stop()
+			sentry.Flush(2 * time.Second)
 		}()
 
 		appSignal := make(chan os.Signal, 3)
@@ -57,6 +60,10 @@ var scrapeCmd = &cobra.Command{
 			stop()
 		}()
 
-		return handler.Handle(ctx, action)
+		err := handler.Handle(ctx, action)
+		if err != nil {
+			slog.Error("failed to handle action", slog.Any("error", err))
+			sentry.CaptureException(err)
+		}
 	},
 }
