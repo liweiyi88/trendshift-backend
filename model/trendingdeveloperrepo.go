@@ -143,7 +143,7 @@ func (tdr *TrendingDeveloperRepo) Save(ctx context.Context, trendingDeveloper Tr
 }
 
 func (tdr *TrendingDeveloperRepo) Update(ctx context.Context, trendingDeveloper TrendingDeveloper) error {
-	query := "UPDATE `trending_developers` SET username = ?, rank = ?, language = ?, scraped_at = ?, trend_date = ?, developer_id = ? WHERE id = ?"
+	query := "UPDATE `trending_developers` SET `username` = ?, `rank` = ?, `language` = ?, `scraped_at` = ?, `trend_date` = ?, `developer_id` = ? WHERE `id` = ?"
 
 	result, err := tdr.db.ExecContext(
 		ctx,
