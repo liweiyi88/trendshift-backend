@@ -3,6 +3,7 @@ package trending
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/liweiyi88/trendshift-backend/github"
 	"github.com/liweiyi88/trendshift-backend/global"
@@ -45,7 +46,7 @@ func (fetcher *GithubFetcher) FetchDevelopers(ctx context.Context) error {
 		exist := false
 
 		for _, developer := range developers {
-			if developer.Username == unlinkedDeveloper {
+			if strings.EqualFold(developer.Username, unlinkedDeveloper) {
 				exist = true
 
 				err := tdr.LinkDeveloper(ctx, developer)
@@ -123,7 +124,7 @@ func (fetcher *GithubFetcher) FetchRepositories(ctx context.Context) error {
 		exist := false
 
 		for _, repo := range repos {
-			if repo.FullName == unlinkedRepo {
+			if strings.EqualFold(repo.FullName, unlinkedRepo) {
 				exist = true
 				err := trr.LinkRepository(ctx, repo)
 
