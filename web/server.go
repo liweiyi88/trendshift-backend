@@ -101,6 +101,7 @@ func Server() {
 		ReadHeaderTimeout: 20 * time.Second,
 		ReadTimeout:       1 * time.Minute,
 		WriteTimeout:      1 * time.Minute,
+		IdleTimeout:       65 * time.Second, // greater than the default AWS Load balancer idle timeout settings.
 	}
 
 	// Initializing the server in a goroutine so that
