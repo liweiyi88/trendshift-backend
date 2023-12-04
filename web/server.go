@@ -96,8 +96,11 @@ func Server() {
 	}()
 
 	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: router,
+		Addr:              ":8080",
+		Handler:           router,
+		ReadHeaderTimeout: 20 * time.Second,
+		ReadTimeout:       1 * time.Minute,
+		WriteTimeout:      1 * time.Minute,
 	}
 
 	// Initializing the server in a goroutine so that
