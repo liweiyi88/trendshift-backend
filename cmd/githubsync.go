@@ -93,7 +93,10 @@ var gihtubSyncCmd = &cobra.Command{
 			stop()
 		}()
 
-		handler := github.NewSyncHandler(db, model.NewGhRepositoryRepo(db, dbutils.NewQueryBuilder()), gh)
+		qb := dbutils.NewQueryBuilder()
+		repositoryRepo := model.NewGhRepositoryRepo(db, qb)
+		developerRepo := model.NewDeveloperRepo(db, qb)
+		handler := github.NewSyncHandler(db, repositoryRepo, developerRepo, gh)
 		err := handler.Handle(ctx, action, opt.Start(start), opt.End(end), opt.Limit(limit))
 
 		if err != nil {

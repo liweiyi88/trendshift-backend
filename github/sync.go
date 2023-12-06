@@ -9,7 +9,6 @@ import (
 
 	"github.com/liweiyi88/trendshift-backend/database"
 	"github.com/liweiyi88/trendshift-backend/model"
-	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
 	"github.com/liweiyi88/trendshift-backend/utils/sliceutils"
 	"golang.org/x/sync/errgroup"
 )
@@ -19,12 +18,13 @@ const chulkSize = 200
 type SyncHandler struct {
 	db             database.DB
 	repositoryRepo *model.GhRepositoryRepo
+	developerRepo  *model.DeveloperRepo
 	client         *Client
 }
 
-func NewSyncHandler(db database.DB, repositoryRepo *model.GhRepositoryRepo, client *Client) *SyncHandler {
+func NewSyncHandler(db database.DB, repositoryRepo *model.GhRepositoryRepo, developerRepo *model.DeveloperRepo, client *Client) *SyncHandler {
 	return &SyncHandler{
-		db, repositoryRepo, client,
+		db, repositoryRepo, developerRepo, client,
 	}
 }
 
@@ -68,10 +68,54 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 	return group.Wait()
 }
 
-func (s *SyncHandler) syncRepositories(ctx context.Context, opts ...any) error {
-	repositoryRepo := model.NewGhRepositoryRepo(s.db, dbutils.NewQueryBuilder())
+func (s *SyncHandler) updateDevelopers(ctx context.Context, developers []model.Developer) error {
+	group, ctx := errgroup.WithContext(ctx)
 
-	repositories, err := repositoryRepo.FindAll(
+	// Follow the github best practice to avoid reaching secondary rate limit
+	// see https://docs.github.com/en/rest/guides/best-practices-for-using-the-rest-api?apiVersion=2022-11-28#dealing-with-secondary-rate-limits
+	limiter := time.NewTicker(20 * time.Millisecond)
+	defer limiter.Stop()
+
+	for _, developer := range developers {
+		<-limiter.C
+
+		developer := developer
+
+		group.Go(func() error {
+			ghDeveloper, err := s.client.GetDeveloper(ctx, developer.Username)
+
+			if err != nil {
+				if errors.Is(err, ErrNotFound) {
+					slog.Info(fmt.Sprintf("not found on GitHub, developer: %s", developer.Username))
+				} else if errors.Is(err, ErrAccessBlocked) {
+					slog.Info(fmt.Sprintf("developer access blocked due to leagl reason, developer: %s", developer.Username))
+				} else {
+					return fmt.Errorf("failed to get developer details from GitHub: %v", err)
+				}
+			}
+
+			developer.AvatarUrl = ghDeveloper.AvatarUrl
+			developer.Name = ghDeveloper.Name
+			developer.Company = ghDeveloper.Company
+			developer.Blog = ghDeveloper.Blog
+			developer.Location = ghDeveloper.Location
+			developer.Email = ghDeveloper.Email
+			developer.Bio = ghDeveloper.Bio
+			developer.TwitterUsername = ghDeveloper.TwitterUsername
+			developer.PublicRepos = ghDeveloper.PublicRepos
+			developer.PublicGists = ghDeveloper.PublicGists
+			developer.Followers = ghDeveloper.Followers
+			developer.Following = ghDeveloper.Following
+
+			return s.developerRepo.Update(ctx, developer)
+		})
+	}
+
+	return group.Wait()
+}
+
+func (s *SyncHandler) syncRepositories(ctx context.Context, opts ...any) error {
+	repositories, err := s.repositoryRepo.FindAll(
 		ctx,
 		opts...,
 	)
@@ -97,6 +141,25 @@ func (s *SyncHandler) syncRepositories(ctx context.Context, opts ...any) error {
 }
 
 func (s *SyncHandler) syncDevelopers(ctx context.Context, opts ...any) error {
+	developers, err := s.developerRepo.FindAll(ctx, opts...)
+
+	if err != nil {
+		return fmt.Errorf("failed to find developers: %v", err)
+	}
+
+	chulks := sliceutils.Chunk[model.Developer](developers, chulkSize)
+
+	for _, chulk := range chulks {
+		err := s.updateDevelopers(ctx, chulk)
+
+		if err != nil {
+			return fmt.Errorf("could not sync developers: %v", err)
+		}
+
+		slog.Info(fmt.Sprintf("completed batch update for %d developers", len(chulk)))
+	}
+
+	slog.Info("developers update completed.")
 	return nil
 }
 
