@@ -30,7 +30,7 @@ func (dc *DeveloperController) Get(c *gin.Context) {
 		return
 	}
 
-	developer, err := dc.dr.FindById(c, id) 
+	developer, err := dc.dr.FindById(c, id)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})

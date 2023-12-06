@@ -68,7 +68,7 @@ func (dr *DeveloperRepo) FindById(ctx context.Context, id int) (Developer, error
 			&trending.TrendDate,
 			&trending.Rank,
 			&trending.TrendingLanguage,
-			); err != nil {
+		); err != nil {
 			return developer, err
 		}
 
