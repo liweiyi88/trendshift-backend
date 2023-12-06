@@ -14,8 +14,8 @@ import (
 	"github.com/liweiyi88/trendshift-backend/model"
 )
 
-var ErrNotFound = errors.New("not found on GitHub.")
-var ErrAccessBlocked = errors.New("repository access blocked.")
+var ErrNotFound = errors.New("not found on GitHub")
+var ErrAccessBlocked = errors.New("repository access blocked")
 
 // GitHub rest api client
 type Client struct {

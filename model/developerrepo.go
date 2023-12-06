@@ -26,6 +26,71 @@ func NewDeveloperRepo(db database.DB, qb *dbutils.QueryBuilder) *DeveloperRepo {
 	return &DeveloperRepo{db, qb}
 }
 
+func (dr *DeveloperRepo) FindAll(ctx context.Context, opts ...any) ([]Developer, error) {
+	qb := dr.qb
+	qb.Query("select * from developers")
+
+	options := opt.ExtractOptions(opts...)
+	start, end, limit := options.Start, options.End, options.Limit
+
+	if start != "" {
+		qb.Where("updated_at > ?", start)
+	}
+
+	if end != "" {
+		qb.Where("updated_at <= ?", end)
+	}
+
+	if limit > 0 {
+		qb.Limit(limit)
+	}
+
+	q, args := qb.GetQuery()
+
+	rows, err := dr.db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var developers []Developer
+
+	for rows.Next() {
+		var dev Developer
+
+		if err := rows.Scan(
+			&dev.Id,
+			&dev.GhId,
+			&dev.Username,
+			&dev.AvatarUrl,
+			&dev.Name,
+			&dev.Company,
+			&dev.Blog,
+			&dev.Location,
+			&dev.Email,
+			&dev.Bio,
+			&dev.TwitterUsername,
+			&dev.PublicRepos,
+			&dev.PublicGists,
+			&dev.Followers,
+			&dev.Following,
+			&dev.CreatedAt,
+			&dev.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		developers = append(developers, dev)
+	}
+
+	if err = rows.Err(); err != nil {
+		return developers, err
+	}
+
+	return developers, nil
+}
+
 func (dr *DeveloperRepo) FindById(ctx context.Context, id int) (Developer, error) {
 	qb := dr.qb
 	qb.Query("select developers.*, trending_developers.`trend_date`, trending_developers.`rank`, trending_developers.`language` as `trending_language` from developers join trending_developers on developers.id = trending_developers.developer_id")
@@ -68,7 +133,7 @@ func (dr *DeveloperRepo) FindById(ctx context.Context, id int) (Developer, error
 			&trending.TrendDate,
 			&trending.Rank,
 			&trending.TrendingLanguage,
-			); err != nil {
+		); err != nil {
 			return developer, err
 		}
 
@@ -166,6 +231,45 @@ func (dr *DeveloperRepo) FindTrendingDevelopers(ctx context.Context, opts ...any
 	}
 
 	return developers, nil
+}
+
+func (dr *DeveloperRepo) Update(ctx context.Context, developer Developer) error {
+	query := "UPDATE `developers` SET avatar_url = ?, name = ?, company = ?, blog = ?, location = ?, email = ?, bio = ?, twitter_username = ?, public_repos = ?, public_gists = ?, followers = ?, following = ?, updated_at = ? WHERE id = ?"
+
+	updatedAt := time.Now()
+
+	result, err := dr.db.ExecContext(
+		ctx, query,
+		developer.AvatarUrl,
+		developer.Name,
+		developer.Company,
+		developer.Blog,
+		developer.Location,
+		developer.Email,
+		developer.Bio,
+		developer.TwitterUsername,
+		developer.PublicRepos,
+		developer.PublicGists,
+		developer.Followers,
+		developer.Following,
+		updatedAt.Format("2006-01-02 15:04:05"),
+		developer.Id)
+
+	if err != nil {
+		return fmt.Errorf("failed to run developers update query, developer id: %d, error: %v", developer.Id, err)
+	}
+
+	n, err := result.RowsAffected()
+
+	if err != nil {
+		return fmt.Errorf("developers update rows affected returns error: %v", err)
+	}
+
+	if n != 1 {
+		return fmt.Errorf("unexpected number of rows affected after update: %d", n)
+	}
+
+	return nil
 }
 
 func (dr *DeveloperRepo) Save(ctx context.Context, developer Developer) (int64, error) {
