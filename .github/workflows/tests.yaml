@@ -10,7 +10,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.21.4]
+        go-version: [1.21.5]
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -29,7 +29,7 @@ jobs:
 
       - name: Go Coverage Badge
         uses: tj-actions/coverage-badge-go@v1
-        if: ${{ runner.os == 'ubuntu-latest' && matrix.go == '1.21.4' }}
+        if: ${{ runner.os == 'ubuntu-latest' && matrix.go == '1.21.5' }}
         with:
           green: 80
           filename: coverage.out
