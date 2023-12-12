@@ -3,7 +3,6 @@ package scraper
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -123,7 +122,7 @@ func (ds *TrendingDeveloperScraper) Scrape(ctx context.Context, language string)
 	developers := ds.scrape(ctx, language)
 
 	if len(developers) == 0 {
-		return errors.New("could not scrape any trending developer data")
+		return fmt.Errorf("could not scrape any trending developer data for language: %s ", language)
 	}
 
 	return ds.saveDevelopers(ctx, language, developers)

@@ -3,7 +3,6 @@ package scraper
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -121,7 +120,7 @@ func (gh *TrendingRepositoryScraper) Scrape(ctx context.Context, language string
 	repos := gh.scrape(ctx, language)
 
 	if len(repos) == 0 {
-		return errors.New("could not scrape any trending repository data")
+		return fmt.Errorf("could not scrape any trending repository data for language: %s", language)
 	}
 
 	return gh.saveRepositories(ctx, language, repos)
