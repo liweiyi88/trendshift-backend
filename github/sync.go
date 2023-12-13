@@ -60,6 +60,7 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 			repository.Owner = ghRepository.Owner
 			repository.Language = ghRepository.Language // Language can also be updated
 			repository.DefaultBranch = ghRepository.DefaultBranch
+			repository.Homepage = ghRepository.Homepage
 
 			return s.repositoryRepo.Update(ctx, repository)
 		})

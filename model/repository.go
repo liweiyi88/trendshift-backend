@@ -30,6 +30,7 @@ type GhRepository struct {
 	Language      string             `json:"language"`
 	Description   dbutils.NullString `json:"description"`
 	DefaultBranch dbutils.NullString `json:"default_branch"`
+	Homepage      dbutils.NullString `json:"homepage"`
 	Tags          []Tag              `json:"tags"`
 	Trendings     []Trending         `json:"trendings"`
 	CreatedAt     time.Time          `json:"created_at"`
