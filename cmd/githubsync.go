@@ -32,7 +32,7 @@ func init() {
 	rootCmd.AddCommand(gihtubSyncCmd)
 
 	gihtubSyncCmd.Flags().StringVarP(&start, "start", "s", "", "--start \"2023-01-06 14:35:00\" ")
-	gihtubSyncCmd.Flags().StringVarP(&end, "end", "e", "", "--end \"2023-10-06 14:35:00\" or --end=-2d, --end=2h, `d` for days, `h` for hours ")
+	gihtubSyncCmd.Flags().StringVarP(&end, "end", "e", "", "--end \"2023-10-06 14:35:00\", --end=-2d or --end=2h, `d` for days, `h` for hours ")
 	gihtubSyncCmd.Flags().IntVarP(&limit, "limit", "l", 0, "--limit=100")
 }
 

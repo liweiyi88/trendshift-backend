@@ -33,6 +33,12 @@ func TestParseEndOption(t *testing.T) {
 		t.Error("expected invalid parse error but got nil")
 	}
 
+	end = "!2d"
+	_, err = parseEndDateTimeOption(end)
+	if err == nil {
+		t.Error("expected invalid parse error but got nil")
+	}
+
 	end = "-2d"
 	now := time.Now()
 	end, err = parseEndDateTimeOption(end)
