@@ -52,7 +52,7 @@ func TestParseEndOption(t *testing.T) {
 	}
 
 	if now.Add(time.Duration(-2) * 24 * time.Hour).After(endDate) {
-		t.Errorf("unepexted end date: %v", endDate)
+		t.Errorf("unepexted now: %v, end date: %v", now, endDate)
 	}
 
 	end = "2h"
@@ -68,6 +68,6 @@ func TestParseEndOption(t *testing.T) {
 	}
 
 	if now.Add(time.Duration(-2) * time.Hour).After(endDate) {
-		t.Errorf("unepexted end date: %v", endDate)
+		t.Errorf("unepexted now: %v, end date: %v", now, endDate)
 	}
 }
