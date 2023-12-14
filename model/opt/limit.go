@@ -1,5 +1,7 @@
 package opt
 
+const maxLimit = 100
+
 type LimitOption struct {
 	value int
 }
@@ -7,6 +9,10 @@ type LimitOption struct {
 func (l *LimitOption) Get() int {
 	if l == nil {
 		return 0
+	}
+
+	if l.value > maxLimit {
+		return maxLimit
 	}
 
 	return l.value

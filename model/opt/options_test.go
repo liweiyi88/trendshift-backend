@@ -81,3 +81,29 @@ func TestExtractOptionsWithArgs(t *testing.T) {
 		}
 	}
 }
+
+func TestMaxLimit(t *testing.T) {
+	options := ExtractOptions(
+		DateRange(7),
+		Language("Go"),
+		Start("2023-10-04 00:00:00"),
+		End("2023-10-04 23:59:59"),
+		Limit(101),
+	)
+
+	expcts := []struct {
+		actual any
+		want   any
+	}{
+		{
+			actual: options.Limit,
+			want:   100,
+		},
+	}
+
+	for _, test := range expcts {
+		if test.actual != test.want {
+			t.Errorf("expect: %v, actual got: %v", test.want, test.actual)
+		}
+	}
+}
