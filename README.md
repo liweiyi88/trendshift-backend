@@ -1,1 +1,1 @@
-# gti
+# Trendshift backend

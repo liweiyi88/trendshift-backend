@@ -46,9 +46,9 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 
 			if err != nil {
 				if errors.Is(err, ErrNotFound) {
-					slog.Info(fmt.Sprintf("not found on GitHub, repository: %s", repository.FullName))
+					slog.Info(fmt.Sprintf("repository not found on GitHub, repository: %s", repository.FullName))
 				} else if errors.Is(err, ErrAccessBlocked) {
-					slog.Info(fmt.Sprintf("repository access blocked due to leagl reason, repository: %s", repository.FullName))
+					slog.Info(fmt.Sprintf("repository access blocked, repository: %s", repository.FullName))
 				} else {
 					return fmt.Errorf("failed to get repository details from GitHub: %v", err)
 				}

@@ -54,7 +54,7 @@ func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (mode
 	defer func() {
 		err := res.Body.Close()
 		if err != nil {
-			slog.Info("failed to close response body when fetch developer:", err)
+			slog.Any("failed to close response body when fetch developer:", err)
 		}
 	}()
 
@@ -81,7 +81,7 @@ func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (mode
 			return developer, ErrNotFound
 		}
 
-		if res.StatusCode == http.StatusUnavailableForLegalReasons {
+		if res.StatusCode == http.StatusUnavailableForLegalReasons || res.StatusCode == http.StatusForbidden {
 			return developer, ErrAccessBlocked
 		}
 
@@ -117,7 +117,7 @@ func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (mod
 	defer func() {
 		err := res.Body.Close()
 		if err != nil {
-			slog.Info("failed to close response body when fetch repository:", err)
+			slog.Any("failed to close response body when fetch repository:", err)
 		}
 	}()
 
@@ -144,7 +144,7 @@ func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (mod
 			return ghRepository, ErrNotFound
 		}
 
-		if res.StatusCode == http.StatusUnavailableForLegalReasons {
+		if res.StatusCode == http.StatusUnavailableForLegalReasons || res.StatusCode == http.StatusForbidden {
 			return ghRepository, ErrAccessBlocked
 		}
 
