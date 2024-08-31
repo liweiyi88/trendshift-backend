@@ -101,7 +101,7 @@ func (tr *TrendingRepositoryRepo) Save(ctx context.Context, trendingRepository T
 		scrapeAt = trendingRepository.ScrapedAt
 	}
 
-	result, err := tr.db.ExecContext(ctx, query, trendingRepository.RepoFullName, trendingRepository.Language, trendingRepository.Rank, scrapeAt.Format("2006-01-02 15:04:05"), trendingRepository.TrendDate.Format("2006-01-02"))
+	result, err := tr.db.ExecContext(ctx, query, trendingRepository.RepoFullName, trendingRepository.Language, trendingRepository.Rank, scrapeAt.Format(time.DateTime), trendingRepository.TrendDate.Format("2006-01-02"))
 
 	if err != nil {
 		return fmt.Errorf("failed to exec insert trending_repositories query to db language: %v, full name: %s, error: %v", trendingRepository.Language, trendingRepository.RepoFullName, err)
@@ -121,7 +121,7 @@ func (tr *TrendingRepositoryRepo) Save(ctx context.Context, trendingRepository T
 func (tr *TrendingRepositoryRepo) Update(ctx context.Context, trendingRepository TrendingRepository) error {
 	query := "UPDATE `trending_repositories` SET `full_name` = ?, `rank` = ?, `language` = ?, `scraped_at` = ?, `trend_date` = ?, `repository_id` = ? WHERE `id` = ?"
 
-	result, err := tr.db.ExecContext(ctx, query, trendingRepository.RepoFullName, trendingRepository.Rank, trendingRepository.Language, trendingRepository.ScrapedAt.Format("2006-01-02 15:04:05"), trendingRepository.TrendDate.Format("2006-01-02"), nil, trendingRepository.Id)
+	result, err := tr.db.ExecContext(ctx, query, trendingRepository.RepoFullName, trendingRepository.Rank, trendingRepository.Language, trendingRepository.ScrapedAt.Format(time.DateTime), trendingRepository.TrendDate.Format("2006-01-02"), nil, trendingRepository.Id)
 
 	if err != nil {
 		return fmt.Errorf("failed to run trending_repositories update query, trending repository id: %d, error: %v", trendingRepository.Id, err)

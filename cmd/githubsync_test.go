@@ -46,13 +46,13 @@ func TestParseEndOption(t *testing.T) {
 		t.Error(err)
 	}
 
-	endDate, err := time.Parse("2006-01-02 15:04:05", end)
+	endDate, err := time.Parse(time.DateTime, end)
 	if err != nil {
 		t.Error(err)
 	}
 
-	nowString := now.Add(time.Duration(-2) * 24 * time.Hour).Format("2006-01-02 15:04:05")
-	nowDate, _ := time.Parse("2006-01-02 15:04:05", nowString)
+	nowString := now.Add(time.Duration(-2) * 24 * time.Hour).Format(time.DateTime)
+	nowDate, _ := time.Parse(time.DateTime, nowString)
 
 	if nowDate.After(endDate) {
 		t.Errorf("unepexted now: %v, end date: %v", now, endDate)
@@ -66,13 +66,13 @@ func TestParseEndOption(t *testing.T) {
 		t.Error(err)
 	}
 
-	endDate, err = time.Parse("2006-01-02 15:04:05", end)
+	endDate, err = time.Parse(time.DateTime, end)
 	if err != nil {
 		t.Error(err)
 	}
 
-	nowString = now.Add(time.Duration(2 * time.Hour)).Format("2006-01-02 15:04:05")
-	nowDate, _ = time.Parse("2006-01-02 15:04:05", nowString)
+	nowString = now.Add(time.Duration(2 * time.Hour)).Format(time.DateTime)
+	nowDate, _ = time.Parse(time.DateTime, nowString)
 
 	if nowDate.After(endDate) {
 		t.Errorf("unepexted now: %v, end date: %v", now, endDate)

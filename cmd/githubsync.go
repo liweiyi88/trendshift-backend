@@ -61,7 +61,7 @@ var gihtubSyncCmd = &cobra.Command{
 		}()
 
 		if start != "" {
-			_, err := time.Parse("2006-01-02 15:04:05", start)
+			_, err := time.Parse(time.DateTime, start)
 			if err != nil {
 				slog.Error("failed to parse start time", slog.Any("error", err))
 				sentry.CaptureException(err)
@@ -121,17 +121,17 @@ func parseEndDateTimeOption(end string) (string, error) {
 
 		if unit == "d" {
 			endTime := now.Add(time.Duration(number) * 24 * time.Hour)
-			end = endTime.Format("2006-01-02 15:04:05")
+			end = endTime.Format(time.DateTime)
 			return end, nil
 		} else if unit == "h" {
 			endTime := now.Add(time.Duration(number) * time.Hour)
 
-			fmt.Println("end time", endTime.Format("2006-01-02 15:04:05"))
-			end = endTime.Format("2006-01-02 15:04:05")
+			fmt.Println("end time", endTime.Format(time.DateTime))
+			end = endTime.Format(time.DateTime)
 			return end, nil
 		}
 	}
 
-	_, err = time.Parse("2006-01-02 15:04:05", end)
+	_, err = time.Parse(time.DateTime, end)
 	return end, err
 }

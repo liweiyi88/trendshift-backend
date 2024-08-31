@@ -125,7 +125,7 @@ func (tdr *TrendingDeveloperRepo) Save(ctx context.Context, trendingDeveloper Tr
 		trendingDeveloper.Username,
 		trendingDeveloper.Language,
 		trendingDeveloper.Rank,
-		scrapeAt.Format("2006-01-02 15:04:05"),
+		scrapeAt.Format(time.DateTime),
 		trendingDeveloper.TrendDate.Format("2006-01-02"),
 	)
 
@@ -151,7 +151,7 @@ func (tdr *TrendingDeveloperRepo) Update(ctx context.Context, trendingDeveloper 
 		trendingDeveloper.Username,
 		trendingDeveloper.Rank,
 		trendingDeveloper.Language,
-		trendingDeveloper.ScrapedAt.Format("2006-01-02 15:04:05"),
+		trendingDeveloper.ScrapedAt.Format(time.DateTime),
 		trendingDeveloper.TrendDate.Format("2006-01-02"),
 		nil,
 		trendingDeveloper.Id,

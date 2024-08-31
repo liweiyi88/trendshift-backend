@@ -383,8 +383,8 @@ func (gr *GhRepositoryRepo) Save(ctx context.Context, ghRepo GhRepository) (int6
 		ghRepo.GetDescription(),
 		ghRepo.DefaultBranch,
 		ghRepo.Homepage,
-		createdAt.Format("2006-01-02 15:04:05"),
-		updatedAt.Format("2006-01-02 15:04:05"),
+		createdAt.Format(time.DateTime),
+		updatedAt.Format(time.DateTime),
 	)
 
 	if err != nil {
@@ -410,7 +410,7 @@ func (gr *GhRepositoryRepo) Update(ctx context.Context, ghRepo GhRepository) err
 
 	updatedAt := time.Now()
 
-	result, err := gr.db.ExecContext(ctx, query, ghRepo.FullName, ghRepo.GhrId, ghRepo.Stars, ghRepo.Forks, ghRepo.Language, ghRepo.Owner.Name, ghRepo.Owner.AvatarUrl, ghRepo.GetDescription(), ghRepo.DefaultBranch, ghRepo.Homepage, updatedAt.Format("2006-01-02 15:04:05"), ghRepo.Id)
+	result, err := gr.db.ExecContext(ctx, query, ghRepo.FullName, ghRepo.GhrId, ghRepo.Stars, ghRepo.Forks, ghRepo.Language, ghRepo.Owner.Name, ghRepo.Owner.AvatarUrl, ghRepo.GetDescription(), ghRepo.DefaultBranch, ghRepo.Homepage, updatedAt.Format(time.DateTime), ghRepo.Id)
 
 	if err != nil {
 		return fmt.Errorf("failed to run repositories update query, gh repo id: %d, error: %v", ghRepo.Id, err)

@@ -38,7 +38,7 @@ func (ds *TrendingDeveloperScraper) getTrendPageUrl(language string) string {
 }
 
 // Scrape the trending developer data from GitHub
-func (ds *TrendingDeveloperScraper) scrape(ctx context.Context, language string) []string {
+func (ds *TrendingDeveloperScraper) scrape(language string) []string {
 	c := colly.NewCollector()
 
 	developers := make([]string, 0)
@@ -119,7 +119,7 @@ func (ds *TrendingDeveloperScraper) saveDevelopers(ctx context.Context, language
 
 // Scrape and save trending developers to DB.
 func (ds *TrendingDeveloperScraper) Scrape(ctx context.Context, language string) error {
-	developers := ds.scrape(ctx, language)
+	developers := ds.scrape(language)
 
 	if len(developers) == 0 {
 		return fmt.Errorf("could not scrape any trending developer data for language: %s ", language)

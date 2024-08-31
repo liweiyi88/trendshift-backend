@@ -51,8 +51,8 @@ func (ur *UserRepo) Save(ctx context.Context, user User) (int, error) {
 		user.Username,
 		user.Password,
 		user.Role,
-		createdAt.Format("2006-01-02 15:04:05"),
-		updatedAt.Format("2006-01-02 15:04:05"))
+		createdAt.Format(time.DateTime),
+		updatedAt.Format(time.DateTime))
 
 	if err != nil {
 		return int(lastInsertId), fmt.Errorf("failed to exec insert users query to db, error: %v", err)

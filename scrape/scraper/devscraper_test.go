@@ -39,12 +39,12 @@ func TestGetTrendPageUrl(t *testing.T) {
 		}
 	}
 
-	group, ctx := errgroup.WithContext(context.Background())
+	group, _ := errgroup.WithContext(context.Background())
 
 	for _, language := range config.LanguageToScrape {
 		language := language
 		group.Go(func() error {
-			developers := scraper.scrape(ctx, language)
+			developers := scraper.scrape(language)
 
 			if len(developers) == 0 {
 				return fmt.Errorf("could not scrape trending developers from GitHub, language: %s", language)

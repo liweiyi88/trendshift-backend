@@ -39,7 +39,7 @@ func (gh *TrendingRepositoryScraper) getTrendPageUrl(language string) string {
 	return gh.url
 }
 
-func (gh *TrendingRepositoryScraper) scrape(ctx context.Context, language string) []string {
+func (gh *TrendingRepositoryScraper) scrape(language string) []string {
 	c := colly.NewCollector()
 
 	repos := make([]string, 0)
@@ -117,7 +117,7 @@ func (gh *TrendingRepositoryScraper) saveRepositories(ctx context.Context, langu
 }
 
 func (gh *TrendingRepositoryScraper) Scrape(ctx context.Context, language string) error {
-	repos := gh.scrape(ctx, language)
+	repos := gh.scrape(language)
 
 	if len(repos) == 0 {
 		return fmt.Errorf("could not scrape any trending repository data for language: %s", language)

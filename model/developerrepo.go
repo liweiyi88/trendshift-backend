@@ -252,7 +252,7 @@ func (dr *DeveloperRepo) Update(ctx context.Context, developer Developer) error 
 		developer.PublicGists,
 		developer.Followers,
 		developer.Following,
-		updatedAt.Format("2006-01-02 15:04:05"),
+		updatedAt.Format(time.DateTime),
 		developer.Id)
 
 	if err != nil {
@@ -294,8 +294,8 @@ func (dr *DeveloperRepo) Save(ctx context.Context, developer Developer) (int64, 
 		developer.PublicGists,
 		developer.Followers,
 		developer.Following,
-		createdAt.Format("2006-01-02 15:04:05"),
-		updatedAt.Format("2006-01-02 15:04:05"),
+		createdAt.Format(time.DateTime),
+		updatedAt.Format(time.DateTime),
 	)
 
 	if err != nil {
