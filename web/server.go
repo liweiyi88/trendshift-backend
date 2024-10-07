@@ -32,7 +32,7 @@ type Controllers struct {
 
 func initControllers(repositories *global.Repositories) *Controllers {
 	return &Controllers{
-		developerController:  controller.NewDeveloperController(&repositories.DeveloperRepo),
+		developerController:  controller.NewDeveloperController(repositories.DeveloperRepo),
 		repositoryController: controller.NewRepositoryController(repositories.GhRepositoryRepo),
 		tagController:        controller.NewTagController(repositories.TagRepo),
 		securityController:   controller.NewSecurityController(repositories.UserRepo),
