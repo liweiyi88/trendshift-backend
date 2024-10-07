@@ -2,9 +2,11 @@ package dbutils
 
 import (
 	"strings"
+	"sync"
 )
 
 type QueryBuilder struct {
+	mu       sync.Mutex
 	args     []any
 	criteria []string
 	groupBy  string
@@ -27,12 +29,18 @@ func (qb *QueryBuilder) reset() {
 }
 
 func (qb *QueryBuilder) Query(query string) *QueryBuilder {
+	qb.mu.Lock()
+	defer qb.mu.Unlock()
+
 	qb.reset()
 	qb.query = query
 	return qb
 }
 
 func (qb *QueryBuilder) Where(query string, value any) *QueryBuilder {
+	qb.mu.Lock()
+	defer qb.mu.Unlock()
+
 	qb.criteria = append(qb.criteria, query)
 
 	if value != nil {
@@ -43,18 +51,27 @@ func (qb *QueryBuilder) Where(query string, value any) *QueryBuilder {
 }
 
 func (qb *QueryBuilder) GroupBy(condition string) *QueryBuilder {
+	qb.mu.Lock()
+	defer qb.mu.Unlock()
+
 	qb.groupBy = "GROUP BY " + condition
 
 	return qb
 }
 
 func (qb *QueryBuilder) OrderBy(column string, order string) *QueryBuilder {
+	qb.mu.Lock()
+	defer qb.mu.Unlock()
+
 	qb.orderBy = append(qb.orderBy, column+" "+order)
 
 	return qb
 }
 
 func (qb *QueryBuilder) Limit(limit int) *QueryBuilder {
+	qb.mu.Lock()
+	defer qb.mu.Unlock()
+
 	qb.limit = "LIMIT ?"
 
 	qb.args = append(qb.args, limit)
@@ -63,6 +80,9 @@ func (qb *QueryBuilder) Limit(limit int) *QueryBuilder {
 }
 
 func (qb *QueryBuilder) GetQuery() (string, []any) {
+	qb.mu.Lock()
+	defer qb.mu.Unlock()
+
 	query := qb.query
 
 	if len(qb.criteria) > 0 {

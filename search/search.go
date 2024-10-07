@@ -9,7 +9,6 @@ import (
 
 	"github.com/liweiyi88/trendshift-backend/database"
 	"github.com/liweiyi88/trendshift-backend/model"
-	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
 )
 
 const (
@@ -62,7 +61,7 @@ func (h *SearchHandler) Handle(ctx context.Context, action string) error {
 }
 
 func (h *SearchHandler) sync(ctx context.Context) error {
-	repositoryRepo := model.NewGhRepositoryRepo(h.db, dbutils.NewQueryBuilder())
+	repositoryRepo := model.NewGhRepositoryRepo(h.db)
 
 	var repositories []model.GhRepository
 	var err error
