@@ -19,18 +19,18 @@ type TrendingRepositoryResponse struct {
 
 type GhRepositoryRepo struct {
 	db database.DB
-	qb *dbutils.QueryBuilder
 }
 
-func NewGhRepositoryRepo(db database.DB, qb *dbutils.QueryBuilder) *GhRepositoryRepo {
+func NewGhRepositoryRepo(db database.DB) *GhRepositoryRepo {
 	return &GhRepositoryRepo{
 		db: db,
-		qb: qb,
 	}
 }
 
 func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository, error) {
-	qb := gr.qb
+
+	qb := dbutils.NewQueryBuilder()
+
 	qb.Query("select repositories.*, trending_repositories.`trend_date`, trending_repositories.`rank`, trending_repositories.`language` as `trending_language` from repositories join trending_repositories on repositories.id = trending_repositories.repository_id")
 	qb.Where("repositories.id = ?", id)
 	query, args := qb.GetQuery()
@@ -116,7 +116,8 @@ func (gr *GhRepositoryRepo) FindByName(ctx context.Context, name string) (GhRepo
 }
 
 func (gr *GhRepositoryRepo) FindAll(ctx context.Context, opts ...any) ([]GhRepository, error) {
-	qb := gr.qb
+	qb := dbutils.NewQueryBuilder()
+
 	qb.Query("select * from repositories")
 
 	options := opt.ExtractOptions(opts...)
@@ -245,7 +246,7 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, opts ...any) ([]TrendingRepositoryResponse, error) {
 	query := "select repositories.*, count(*) as count, min(trending_repositories.`rank`) as best_ranking from repositories join trending_repositories on repositories.id = trending_repositories.repository_id"
 
-	qb := gr.qb
+	qb := dbutils.NewQueryBuilder()
 	qb.Query(query)
 
 	qb.OrderBy("count", "DESC")

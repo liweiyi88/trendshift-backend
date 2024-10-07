@@ -19,15 +19,14 @@ type TrendingDeveloperResponse struct {
 
 type DeveloperRepo struct {
 	db database.DB
-	qb *dbutils.QueryBuilder
 }
 
-func NewDeveloperRepo(db database.DB, qb *dbutils.QueryBuilder) *DeveloperRepo {
-	return &DeveloperRepo{db, qb}
+func NewDeveloperRepo(db database.DB) *DeveloperRepo {
+	return &DeveloperRepo{db}
 }
 
 func (dr *DeveloperRepo) FindAll(ctx context.Context, opts ...any) ([]Developer, error) {
-	qb := dr.qb
+	qb := dbutils.NewQueryBuilder()
 	qb.Query("select * from developers")
 
 	options := opt.ExtractOptions(opts...)
@@ -92,7 +91,7 @@ func (dr *DeveloperRepo) FindAll(ctx context.Context, opts ...any) ([]Developer,
 }
 
 func (dr *DeveloperRepo) FindById(ctx context.Context, id int) (Developer, error) {
-	qb := dr.qb
+	qb := dbutils.NewQueryBuilder()
 	qb.Query("select developers.*, trending_developers.`trend_date`, trending_developers.`rank`, trending_developers.`language` as `trending_language` from developers join trending_developers on developers.id = trending_developers.developer_id")
 	qb.Where("developers.id = ?", id)
 	query, args := qb.GetQuery()
@@ -156,7 +155,7 @@ func (dr *DeveloperRepo) FindById(ctx context.Context, id int) (Developer, error
 func (dr *DeveloperRepo) FindTrendingDevelopers(ctx context.Context, opts ...any) ([]TrendingDeveloperResponse, error) {
 	query := "select developers.*, count(*) as count, min(trending_developers.`rank`) as best_ranking from developers join trending_developers on developers.id = trending_developers.developer_id"
 
-	qb := dr.qb
+	qb := dbutils.NewQueryBuilder()
 	qb.Query(query)
 
 	qb.OrderBy("count", "DESC")

@@ -18,7 +18,6 @@ import (
 	"github.com/liweiyi88/trendshift-backend/github"
 	"github.com/liweiyi88/trendshift-backend/model"
 	"github.com/liweiyi88/trendshift-backend/model/opt"
-	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
 	"github.com/spf13/cobra"
 )
 
@@ -84,9 +83,8 @@ var gihtubSyncCmd = &cobra.Command{
 			stop()
 		}()
 
-		qb := dbutils.NewQueryBuilder()
-		repositoryRepo := model.NewGhRepositoryRepo(db, qb)
-		developerRepo := model.NewDeveloperRepo(db, qb)
+		repositoryRepo := model.NewGhRepositoryRepo(db)
+		developerRepo := model.NewDeveloperRepo(db)
 		handler := github.NewSyncHandler(db, repositoryRepo, developerRepo, gh)
 		err = handler.Handle(ctx, action, opt.Start(start), opt.End(endDateTime), opt.Limit(limit))
 
