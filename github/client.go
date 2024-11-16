@@ -67,7 +67,7 @@ func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (mode
 	err = json.Unmarshal(body, &developer)
 
 	if err != nil {
-		return developer, fmt.Errorf("failed to decode developer body: %v", err)
+		return developer, fmt.Errorf("failed to decode developer body err: %v, received: %s, status code: %s", err, string(body), res.Status)
 	}
 
 	slog.Info(fmt.Sprintf("fetching %s", developer.Username), slog.Group("github",
