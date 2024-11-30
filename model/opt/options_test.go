@@ -88,7 +88,7 @@ func TestMaxLimit(t *testing.T) {
 		Language("Go"),
 		Start("2023-10-04 00:00:00"),
 		End("2023-10-04 23:59:59"),
-		Limit(101),
+		Limit(2001),
 	)
 
 	expcts := []struct {
@@ -97,7 +97,7 @@ func TestMaxLimit(t *testing.T) {
 	}{
 		{
 			actual: options.Limit,
-			want:   100,
+			want:   2000,
 		},
 	}
 
