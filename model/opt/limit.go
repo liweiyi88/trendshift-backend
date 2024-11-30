@@ -1,6 +1,6 @@
 package opt
 
-const maxLimit = 100
+const maxLimit = 2000
 
 type LimitOption struct {
 	value int
