@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"strings"
 	"time"
@@ -120,7 +121,8 @@ func (gh *TrendingRepositoryScraper) Scrape(ctx context.Context, language string
 	repos := gh.scrape(language)
 
 	if len(repos) == 0 {
-		return fmt.Errorf("could not scrape any trending repository data for language: %s", language)
+		slog.Error("could not scrape any trending repository data.", slog.Any("language", language))
+		return nil
 	}
 
 	return gh.saveRepositories(ctx, language, repos)
