@@ -9,17 +9,13 @@ import (
 )
 
 type Meilisearch struct {
-	client *meilisearch.Client
+	client meilisearch.ServiceManager
 }
 
 func NewMeilisearch() *Meilisearch {
-	client := meilisearch.NewClient(meilisearch.ClientConfig{
-		Host:   config.MeilisearchHost,
-		APIKey: config.MeilisearchMasterKey,
-	})
-
+	serviceManager := meilisearch.New(config.MeilisearchHost, meilisearch.WithAPIKey(config.MeilisearchMasterKey))
 	return &Meilisearch{
-		client: client,
+		client: serviceManager,
 	}
 }
 
