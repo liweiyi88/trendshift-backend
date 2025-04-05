@@ -11,7 +11,7 @@ import (
 
 const JWTMaxAge = 60 * time.Minute
 
-var LanguageToScrape = []string{"", "javascript", "python", "go", "java", "php", "c++", "c", "typescript", "ruby", "c#", "rust", "dart", "swift"}
+var LanguageToScrape = []string{"", "javascript", "python", "go", "java", "php", "c++", "c", "typescript", "ruby", "c#", "rust", "dart", "swift", "kotlin"}
 
 var (
 	DatabaseDSN          string
