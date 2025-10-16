@@ -1,4 +1,4 @@
-package cmd
+package searchcmd
 
 import (
 	"context"
@@ -15,11 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	rootCmd.AddCommand(searchCmd)
-}
-
-var searchCmd = &cobra.Command{
+var SearchCmd = &cobra.Command{
 	Use:   "search [sync|delete]",
 	Short: "sync or delete repositories in full text search",
 	Args:  cobra.ExactArgs(1),

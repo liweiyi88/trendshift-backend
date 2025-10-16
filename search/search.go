@@ -79,6 +79,22 @@ func (h *SearchHandler) sync(ctx context.Context) error {
 	}
 
 	slog.Info("repositories have been imported")
+
+	var developers []model.Developer
+	developerRepo := model.NewDeveloperRepo(h.db)
+
+	developers, err = developerRepo.FindAll(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve developers: %v", err)
+	}
+
+	err = h.search.UpsertDevelopers(developers...)
+
+	if err != nil {
+		return fmt.Errorf("could not import developers to full text search: %v", err)
+	}
+
+	slog.Info("developers have been imported")
 	return nil
 }
 

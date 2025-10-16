@@ -1,4 +1,4 @@
-package cmd
+package usercmd
 
 import (
 	"context"
@@ -19,16 +19,15 @@ import (
 var username, password, role string
 
 func init() {
-	rootCmd.AddCommand(userCmd)
-	userCmd.Flags().StringVarP(&username, "username", "u", "", "username")
-	userCmd.Flags().StringVarP(&password, "password", "p", "", "password")
-	userCmd.Flags().StringVarP(&role, "role", "r", "user", "password")
+	UserCmd.Flags().StringVarP(&username, "username", "u", "", "username")
+	UserCmd.Flags().StringVarP(&password, "password", "p", "", "password")
+	UserCmd.Flags().StringVarP(&role, "role", "r", "user", "password")
 
-	userCmd.MarkFlagRequired("username")
-	userCmd.MarkFlagRequired("password")
+	UserCmd.MarkFlagRequired("username")
+	UserCmd.MarkFlagRequired("password")
 }
 
-var userCmd = &cobra.Command{
+var UserCmd = &cobra.Command{
 	Use:   "user:create",
 	Short: "Create user",
 	Run: func(cmd *cobra.Command, args []string) {

@@ -61,11 +61,12 @@ var migrateCmd = &cobra.Command{
 			sentry.Flush(2 * time.Second)
 		}()
 
-		if action == "up" {
+		switch action {
+		case "up":
 			err = m.Up()
-		} else if action == "down" {
+		case "down":
 			err = m.Down()
-		} else {
+		default:
 			err = errors.New("unsupported action, only 'up' or 'down' are valida action")
 		}
 

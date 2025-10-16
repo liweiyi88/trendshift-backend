@@ -1,4 +1,4 @@
-package cmd
+package githubcmd
 
 import (
 	"context"
@@ -28,14 +28,12 @@ var limit int
 // If run as cronjob, a suggested command to avoid sending too many requests to GitHub is
 // `sync [repository|developer] --end=-2d --limit=500` and run it hourly.
 func init() {
-	rootCmd.AddCommand(gihtubSyncCmd)
-
-	gihtubSyncCmd.Flags().StringVarP(&start, "start", "s", "", "--start \"2023-01-06 14:35:00\" ")
-	gihtubSyncCmd.Flags().StringVarP(&end, "end", "e", "", "--end \"2023-10-06 14:35:00\", --end=-2d or --end=2h, `d` for days, `h` for hours ")
-	gihtubSyncCmd.Flags().IntVarP(&limit, "limit", "l", 0, "--limit=100")
+	GihtubSyncCmd.Flags().StringVarP(&start, "start", "s", "", "--start \"2023-01-06 14:35:00\" ")
+	GihtubSyncCmd.Flags().StringVarP(&end, "end", "e", "", "--end \"2023-10-06 14:35:00\", --end=-2d or --end=2h, `d` for days, `h` for hours ")
+	GihtubSyncCmd.Flags().IntVarP(&limit, "limit", "l", 0, "--limit=100")
 }
 
-var gihtubSyncCmd = &cobra.Command{
+var GihtubSyncCmd = &cobra.Command{
 	Use:   "sync [repository|developer]",
 	Short: "Sync the latest repositories or developers details from GitHub",
 	Args:  cobra.ExactArgs(1),
@@ -117,11 +115,12 @@ func parseEndDateTimeOption(end string) (string, error) {
 	if err == nil && unit != "" {
 		now := time.Now()
 
-		if unit == "d" {
+		switch unit {
+		case "d":
 			endTime := now.Add(time.Duration(number) * 24 * time.Hour)
 			end = endTime.Format(time.DateTime)
 			return end, nil
-		} else if unit == "h" {
+		case "h":
 			endTime := now.Add(time.Duration(number) * time.Hour)
 
 			fmt.Println("end time", endTime.Format(time.DateTime))
