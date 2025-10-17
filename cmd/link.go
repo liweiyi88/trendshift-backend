@@ -63,11 +63,12 @@ var linkCmd = &cobra.Command{
 
 		var err error
 
-		if action == "repository" {
+		switch action {
+		case "repository":
 			err = githubFetcher.FetchRepositories(ctx)
-		} else if action == "developer" {
+		case "developer":
 			err = githubFetcher.FetchDevelopers(ctx)
-		} else {
+		default:
 			slog.Error("invalid action, expected repository or developer")
 			return
 		}

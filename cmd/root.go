@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/liweiyi88/trendshift-backend/cmd/githubcmd"
+	"github.com/liweiyi88/trendshift-backend/cmd/ingestcmd"
 	"github.com/liweiyi88/trendshift-backend/cmd/scrapecmd"
 	"github.com/liweiyi88/trendshift-backend/cmd/searchcmd"
 	"github.com/liweiyi88/trendshift-backend/cmd/usercmd"
@@ -18,6 +19,7 @@ func init() {
 	rootCmd.AddCommand(usercmd.UserCmd)
 	rootCmd.AddCommand(githubcmd.GihtubSyncCmd)
 	rootCmd.AddCommand(scrapecmd.ScrapeCmd)
+	rootCmd.AddCommand(ingestcmd.IngestCmd)
 }
 
 func Execute() {

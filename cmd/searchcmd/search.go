@@ -17,7 +17,7 @@ import (
 
 var SearchCmd = &cobra.Command{
 	Use:   "search [sync|delete]",
-	Short: "sync or delete repositories in full text search",
+	Short: "Sync or delete repositories and developers in full text search",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		action := args[0]

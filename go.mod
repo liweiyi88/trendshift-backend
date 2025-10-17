@@ -1,6 +1,6 @@
 module github.com/liweiyi88/trendshift-backend
 
-go 1.25.2
+go 1.25.3
 
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.31.4

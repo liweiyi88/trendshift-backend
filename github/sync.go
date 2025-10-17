@@ -125,7 +125,7 @@ func (s *SyncHandler) syncRepositories(ctx context.Context, opts ...any) error {
 		return fmt.Errorf("failed to find repositories: %v", err)
 	}
 
-	chulks := sliceutils.Chunk[model.GhRepository](repositories, chulkSize)
+	chulks := sliceutils.Chunk(repositories, chulkSize)
 
 	for _, chulk := range chulks {
 		err := s.updateRepositories(ctx, chulk)
@@ -148,7 +148,7 @@ func (s *SyncHandler) syncDevelopers(ctx context.Context, opts ...any) error {
 		return fmt.Errorf("failed to find developers: %v", err)
 	}
 
-	chulks := sliceutils.Chunk[model.Developer](developers, chulkSize)
+	chulks := sliceutils.Chunk(developers, chulkSize)
 
 	for _, chulk := range chulks {
 		err := s.updateDevelopers(ctx, chulk)
