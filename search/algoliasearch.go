@@ -45,9 +45,10 @@ func (s *Algoliasearch) Search(query string, opts ...any) (SearchResults, error)
 	}
 
 	for _, result := range res.Results {
-		if result.Index == repositoryIndex {
+		switch result.Index {
+		case repositoryIndex:
 			searchResults.Repositories = append(searchResults.Repositories, result.Hits...)
-		} else if result.Index == developerIndex {
+		case developerIndex:
 			searchResults.Developers = append(searchResults.Developers, result.Hits...)
 		}
 	}

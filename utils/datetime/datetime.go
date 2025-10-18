@@ -14,6 +14,14 @@ func NewDateRange(start time.Time, end time.Time) *DateRange {
 	}
 }
 
+func StartOfToday() time.Time {
+	return StartOfDay(time.Now())
+}
+
+func StartOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
 func StartOfThisMonth() time.Time {
 	return StartOfMonth(time.Now())
 }

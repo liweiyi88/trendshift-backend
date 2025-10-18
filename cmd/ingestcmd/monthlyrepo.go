@@ -2,11 +2,18 @@ package ingestcmd
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/liweiyi88/trendshift-backend/config"
+	"github.com/liweiyi88/trendshift-backend/database"
 	"github.com/liweiyi88/trendshift-backend/github"
-	"github.com/liweiyi88/trendshift-backend/utils/datetime"
+	"github.com/liweiyi88/trendshift-backend/ingestion"
+	"github.com/liweiyi88/trendshift-backend/model"
 	"github.com/spf13/cobra"
 )
 
@@ -15,36 +22,35 @@ var ingestMonthlyRepositoryDataCmd = &cobra.Command{
 	Short: "Fetch, aggregate, and save monthly GitHub repo data",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config.Init()
-		client := github.NewClient(config.GitHubToken)
 
-		stargazers := make([]github.Stargazer, 0)
-		var cursor *string
+		ctx, stop := context.WithCancel(context.Background())
+		db := database.GetInstance(ctx)
+		gh := github.NewClient(config.GitHubToken)
 
-		startOfThisMonth := datetime.StartOfThisMonth()
-		endOfThisMonth := datetime.EndOfThisMonth()
-
-		for {
-			data, nextCursor, err := client.GetRepositoryStars(
-				context.Background(),
-				"liweiyi88",
-				"trendshift",
-				cursor,
-				&startOfThisMonth,
-				&endOfThisMonth)
+		defer func() {
+			err := db.Close()
 
 			if err != nil {
-				return fmt.Errorf("failed to get repository stars, error: %v", err)
+				slog.Error("failed to close db", slog.Any("error", err))
+				sentry.CaptureException(err)
 			}
 
-			stargazers = append(stargazers, data...)
-			if nextCursor == nil {
-				break
-			}
+			stop()
+			sentry.Flush(2 * time.Second)
+		}()
 
-			cursor = nextCursor
-		}
+		appSignal := make(chan os.Signal, 3)
+		signal.Notify(appSignal, os.Interrupt, syscall.SIGTERM)
 
-		fmt.Printf("Total stargazers fetched: %d\n", len(stargazers))
-		return nil
+		go func() {
+			<-appSignal
+			stop()
+		}()
+
+		rmr := model.NewRepositoryMonthlyInsightRepo(db)
+		ingestor := ingestion.NewMonthlyRepoDataIngestor(rmr, gh)
+
+		now := time.Now()
+		return ingestor.Ingest(ctx, int(now.Month()), now.Year())
 	},
 }

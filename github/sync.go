@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/liweiyi88/trendshift-backend/database"
 	"github.com/liweiyi88/trendshift-backend/model"
 	"github.com/liweiyi88/trendshift-backend/utils/sliceutils"
 	"golang.org/x/sync/errgroup"
@@ -16,15 +15,14 @@ import (
 const chulkSize = 200
 
 type SyncHandler struct {
-	db             database.DB
 	repositoryRepo *model.GhRepositoryRepo
 	developerRepo  *model.DeveloperRepo
 	client         *Client
 }
 
-func NewSyncHandler(db database.DB, repositoryRepo *model.GhRepositoryRepo, developerRepo *model.DeveloperRepo, client *Client) *SyncHandler {
+func NewSyncHandler(repositoryRepo *model.GhRepositoryRepo, developerRepo *model.DeveloperRepo, client *Client) *SyncHandler {
 	return &SyncHandler{
-		db, repositoryRepo, developerRepo, client,
+		repositoryRepo, developerRepo, client,
 	}
 }
 

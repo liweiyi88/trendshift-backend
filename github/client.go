@@ -27,6 +27,25 @@ type Stargazer struct {
 	Login     string
 }
 
+type Fork struct {
+	CreatedAt time.Time
+	Login     string
+}
+
+type Pr struct {
+	Number   int
+	Title    string
+	MergedAt time.Time
+}
+
+type Issue struct {
+	Title     string
+	Number    int
+	Closed    bool
+	ClosedAt  time.Time
+	CreatedAt time.Time
+}
+
 type GraphQLResponse struct {
 	Data struct {
 		Repository struct {
@@ -42,6 +61,57 @@ type GraphQLResponse struct {
 					HasNextPage bool   `json:"hasNextPage"`
 				} `json:"pageInfo"`
 			} `json:"stargazers"`
+			Issues struct {
+				Edges []struct {
+					Node struct {
+						Number    int    `json:"number"`
+						Title     string `json:"title"`
+						Closed    bool   `json:"closed"`
+						ClosedAt  string `json:"closedAt"`
+						CreatedAt string `json:"createdAt"`
+						Author    struct {
+							Login string `json:"login"`
+						} `json:"author"`
+						URL string `json:"url"`
+					} `json:"node"`
+				} `json:"edges"`
+				PageInfo struct {
+					EndCursor   string `json:"endCursor"`
+					HasNextPage bool   `json:"hasNextPage"`
+				} `json:"pageInfo"`
+			} `json:"issues"`
+			PullRequests struct {
+				Edges []struct {
+					Node struct {
+						Number   int    `json:"number"`
+						Title    string `json:"title"`
+						MergedAt string `json:"mergedAt"`
+						Author   struct {
+							Login string `json:"login"`
+						} `json:"author"`
+						URL string `json:"url"`
+					} `json:"node"`
+				} `json:"edges"`
+				PageInfo struct {
+					EndCursor   string `json:"endCursor"`
+					HasNextPage bool   `json:"hasNextPage"`
+				} `json:"pageInfo"`
+			} `json:"pullRequests"`
+			Forks struct {
+				Edges []struct {
+					Node struct {
+						Name  string `json:"name"`
+						Owner struct {
+							Login string `json:"login"`
+						} `json:"owner"`
+						CreatedAt string `json:"createdAt"`
+					} `json:"node"`
+				} `json:"edges"`
+				PageInfo struct {
+					EndCursor   string `json:"endCursor"`
+					HasNextPage bool   `json:"hasNextPage"`
+				} `json:"pageInfo"`
+			} `json:"forks"`
 		} `json:"repository"`
 	} `json:"data"`
 }
@@ -79,6 +149,282 @@ func NewClient(token string) *Client {
 	}
 }
 
+func fetchPaginated[T any](
+	ctx context.Context,
+	query string,
+	token string,
+	owner, repo string,
+	cursor *string,
+	extractEdges func(body []byte) ([]T, *string, error),
+) ([]T, *string, error) {
+	variables := map[string]any{
+		"owner": owner,
+		"repo":  repo,
+		"after": cursor,
+	}
+
+	requestData := map[string]any{
+		"query":     query,
+		"variables": variables,
+	}
+
+	bodyBytes, err := json.Marshal(requestData)
+	if err != nil {
+		return nil, nil, fmt.Errorf("[github graphql] failed to marshal request data, %v", requestData)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", GraphQLURL, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, nil, fmt.Errorf("[github graphql] failed to create new http request, error: %v", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("[github graphql] failed to send graphql request, error: %v", err)
+	}
+
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			slog.Error("failed to close response body", slog.String("error", err.Error()))
+		}
+	}()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to read response body, error: %v", err)
+	}
+
+	err = checkGitHubResponse(res, body, "github graphql")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	printRateLimitHeaders("github graphql", *res)
+	return extractEdges(body)
+}
+
+func (ghClient *Client) GetRepositoryForks(
+	ctx context.Context,
+	owner, repo string,
+	cursor *string,
+	start *time.Time,
+	end *time.Time) ([]Fork, *string, error) {
+	query := `
+query ($owner: String!, $repo: String!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    forks(first: 100, after: $after, orderBy: {field: CREATED_AT, direction: DESC}) {
+      edges {
+        node {
+		  name
+		  createdAt
+		  owner {
+		    login
+		  }
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+    }
+  }
+}`
+
+	extractEdges := func(body []byte) ([]Fork, *string, error) {
+		var gqlResp GraphQLResponse
+		if err := json.Unmarshal(body, &gqlResp); err != nil {
+			return nil, nil, fmt.Errorf("[forks] failed to unmarshal graphql response, error: %v", err)
+		}
+
+		forks := make([]Fork, 0, len(gqlResp.Data.Repository.Forks.Edges))
+
+		for _, edge := range gqlResp.Data.Repository.Forks.Edges {
+			createdAt, err := time.Parse(time.RFC3339, edge.Node.CreatedAt)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to parse createdAt %s, error: %v", edge.Node.CreatedAt, err)
+			}
+
+			if start != nil && createdAt.Before(*start) {
+				return forks, nil, nil
+			}
+
+			if end != nil && createdAt.After(*end) {
+				return forks, nil, nil
+			}
+
+			fork := Fork{
+				Login:     edge.Node.Owner.Login,
+				CreatedAt: createdAt,
+			}
+
+			forks = append(forks, fork)
+		}
+
+		var nextCursor *string
+		if gqlResp.Data.Repository.Forks.PageInfo.HasNextPage {
+			nextCursor = &gqlResp.Data.Repository.Forks.PageInfo.EndCursor
+		}
+
+		return forks, nextCursor, nil
+	}
+
+	return fetchPaginated(ctx, query, ghClient.Token, owner, repo, cursor, extractEdges)
+}
+
+func (ghClient *Client) GetClosedIssues(
+	ctx context.Context,
+	owner, repo string,
+	cursor *string,
+	start, end *time.Time) ([]Issue, *string, error) {
+	query := `
+query ($owner: String!, $repo: String!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    issues(first: 100, after: $after, states: CLOSED, orderBy: {field: UPDATED_AT, direction: DESC}) {
+      edges {
+	    node {
+		  number
+          title
+		  closed
+		  createdAt
+          closedAt
+          author {
+            login
+          }
+          url
+		}
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+    }
+  }
+}`
+
+	extractEdges := func(body []byte) ([]Issue, *string, error) {
+		var gqlResp GraphQLResponse
+		if err := json.Unmarshal(body, &gqlResp); err != nil {
+			return nil, nil, fmt.Errorf("[closed issue] failed to unmarshal graphql response, error: %v", err)
+		}
+
+		closedIssues := make([]Issue, 0, len(gqlResp.Data.Repository.Issues.Edges))
+
+		for _, edge := range gqlResp.Data.Repository.Issues.Edges {
+
+			createdAt, err := time.Parse(time.RFC3339, edge.Node.CreatedAt)
+			if err != nil {
+				return nil, nil, fmt.Errorf("[closed issue] failed to parse createdAt %s, error: %v", createdAt, err)
+			}
+
+			closedAt, err := time.Parse(time.RFC3339, edge.Node.ClosedAt)
+			if err != nil {
+				return nil, nil, fmt.Errorf("[closed issue] failed to parse closedAt %s, error: %v", closedAt, err)
+			}
+
+			if start != nil && closedAt.Before(*start) {
+				return closedIssues, nil, nil
+			}
+
+			if end != nil && closedAt.After(*end) {
+				return closedIssues, nil, nil
+			}
+
+			issue := Issue{
+				Title:     edge.Node.Title,
+				Number:    edge.Node.Number,
+				Closed:    edge.Node.Closed,
+				CreatedAt: createdAt,
+				ClosedAt:  closedAt,
+			}
+
+			closedIssues = append(closedIssues, issue)
+		}
+
+		var nextCursor *string
+		if gqlResp.Data.Repository.Issues.PageInfo.HasNextPage {
+			nextCursor = &gqlResp.Data.Repository.Issues.PageInfo.EndCursor
+		}
+
+		return closedIssues, nextCursor, nil
+	}
+
+	return fetchPaginated(ctx, query, ghClient.Token, owner, repo, cursor, extractEdges)
+}
+
+func (ghClient *Client) GetMergedPrs(
+	ctx context.Context,
+	owner,
+	repo string,
+	cursor *string, start, end *time.Time) ([]Pr, *string, error) {
+	query := `
+query ($owner: String!, $repo: String!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    pullRequests(first: 100, after: $after, states: MERGED, orderBy: {field: UPDATED_AT, direction: DESC}) {
+      edges {
+	    node {
+		  number
+          title
+          mergedAt
+          author {
+            login
+          }
+          url
+		}
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+    }
+  }
+}`
+	extractEdges := func(body []byte) ([]Pr, *string, error) {
+		var gqlResp GraphQLResponse
+		if err := json.Unmarshal(body, &gqlResp); err != nil {
+			return nil, nil, fmt.Errorf("[prs] failed to unmarshal graphql response, error: %v", err)
+		}
+
+		prs := make([]Pr, 0, len(gqlResp.Data.Repository.PullRequests.Edges))
+
+		for _, edge := range gqlResp.Data.Repository.PullRequests.Edges {
+			mergedAt, err := time.Parse(time.RFC3339, edge.Node.MergedAt)
+			if err != nil {
+				return nil, nil, fmt.Errorf("[prs] failed to parse starredAt %s, error: %v", mergedAt, err)
+			}
+
+			if start != nil && mergedAt.Before(*start) {
+				return prs, nil, nil
+			}
+
+			if end != nil && mergedAt.After(*end) {
+				return prs, nil, nil
+			}
+
+			pr := Pr{
+				Title:    edge.Node.Title,
+				Number:   edge.Node.Number,
+				MergedAt: mergedAt,
+			}
+
+			prs = append(prs, pr)
+		}
+
+		var nextCursor *string
+		if gqlResp.Data.Repository.PullRequests.PageInfo.HasNextPage {
+			nextCursor = &gqlResp.Data.Repository.PullRequests.PageInfo.EndCursor
+		}
+
+		return prs, nextCursor, nil
+	}
+
+	return fetchPaginated(ctx, query, ghClient.Token, owner, repo, cursor, extractEdges)
+}
+
 func (ghClient *Client) GetRepositoryStars(
 	ctx context.Context,
 	owner, repo string,
@@ -103,90 +449,45 @@ query ($owner: String!, $repo: String!, $after: String) {
   }
 }`
 
-	variables := map[string]any{
-		"owner": owner,
-		"repo":  repo,
-		"after": cursor,
-	}
-
-	requestData := map[string]any{
-		"query":     query,
-		"variables": variables,
-	}
-
-	bodyBytes, err := json.Marshal(requestData)
-	if err != nil {
-		return nil, nil, fmt.Errorf("[stargazers] failed to marshal request data, %v", requestData)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", GraphQLURL, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return nil, nil, fmt.Errorf("[stargazers] failed to create new http request, error: %v", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+ghClient.Token)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-
-	if err != nil {
-		return nil, nil, fmt.Errorf("[stargazers] failed to send graphql request, error: %v", err)
-	}
-
-	defer func() {
-		if err := res.Body.Close(); err != nil {
-			slog.Error("[stargazers] failed to close response body", slog.String("error", err.Error()))
-		}
-	}()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, nil, fmt.Errorf("[stargazers] failed to read response body, error: %v", err)
-	}
-
-	err = checkGitHubResponse(res, body, "stargazers")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var gqlResp GraphQLResponse
-	if err := json.Unmarshal(body, &gqlResp); err != nil {
-		return nil, nil, fmt.Errorf("[stargazers] failed to unmarshal graphql response, error: %v", err)
-	}
-
-	printRateLimitHeaders("get stargazers", *res)
-
-	stars := make([]Stargazer, 0, len(gqlResp.Data.Repository.Stargazers.Edges))
-
-	for _, edge := range gqlResp.Data.Repository.Stargazers.Edges {
-		starredAt, err := time.Parse(time.RFC3339, edge.StarredAt)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to parse starredAt %s, error: %v", edge.StarredAt, err)
+	extractEdges := func(body []byte) ([]Stargazer, *string, error) {
+		var gqlResp GraphQLResponse
+		if err := json.Unmarshal(body, &gqlResp); err != nil {
+			return nil, nil, fmt.Errorf("[stargazers] failed to unmarshal graphql response, error: %v", err)
 		}
 
-		if start != nil && starredAt.Before(*start) {
-			return stars, nil, nil
+		stars := make([]Stargazer, 0, len(gqlResp.Data.Repository.Stargazers.Edges))
+
+		for _, edge := range gqlResp.Data.Repository.Stargazers.Edges {
+			starredAt, err := time.Parse(time.RFC3339, edge.StarredAt)
+			if err != nil {
+				return nil, nil, fmt.Errorf("[stargazers] failed to parse starredAt %s, error: %v", edge.StarredAt, err)
+			}
+
+			if start != nil && starredAt.Before(*start) {
+				return stars, nil, nil
+			}
+
+			if end != nil && starredAt.After(*end) {
+				return stars, nil, nil
+			}
+
+			stargazer := Stargazer{
+				Login:     edge.Node.Login,
+				StarredAt: starredAt,
+			}
+
+			stars = append(stars, stargazer)
 		}
 
-		if end != nil && starredAt.After(*end) {
-			return stars, nil, nil
+		var nextCursor *string
+		if gqlResp.Data.Repository.Stargazers.PageInfo.HasNextPage {
+			nextCursor = &gqlResp.Data.Repository.Stargazers.PageInfo.EndCursor
 		}
 
-		stargazer := Stargazer{
-			Login:     edge.Node.Login,
-			StarredAt: starredAt,
-		}
-
-		stars = append(stars, stargazer)
+		return stars, nextCursor, nil
 	}
 
-	var nextCursor *string
-	if gqlResp.Data.Repository.Stargazers.PageInfo.HasNextPage {
-		nextCursor = &gqlResp.Data.Repository.Stargazers.PageInfo.EndCursor
-	}
-
-	return stars, nextCursor, nil
+	return fetchPaginated(ctx, query, ghClient.Token, owner, repo, cursor, extractEdges)
 }
 
 func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (model.Developer, error) {
