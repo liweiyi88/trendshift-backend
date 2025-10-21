@@ -33,7 +33,9 @@ var ScrapeCmd = &cobra.Command{
 		ctx, stop := context.WithCancel(context.Background())
 		db := database.GetInstance(ctx)
 		repositories := global.InitRepositories(db)
-		gh := github.NewClient(config.GitHubToken)
+
+		tokenPool := github.NewTokenPool(config.GitHubTokens)
+		gh := github.NewClient(tokenPool)
 		handler := scrape.NewScrapeHandler(repositories, search, gh)
 
 		defer func() {

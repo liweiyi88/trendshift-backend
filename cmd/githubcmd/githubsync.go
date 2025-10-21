@@ -43,7 +43,8 @@ var GihtubSyncCmd = &cobra.Command{
 		action := args[0]
 		ctx, stop := context.WithCancel(context.Background())
 		db := database.GetInstance(ctx)
-		gh := github.NewClient(config.GitHubToken)
+		tokenPool := github.NewTokenPool(config.GitHubTokens)
+		gh := github.NewClient(tokenPool)
 
 		defer func() {
 			err := db.Close()

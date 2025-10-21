@@ -1,10 +1,22 @@
 package datetime
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type DateRange struct {
 	StartDate time.Time
 	EndDate   time.Time
+}
+
+func SleepWithContext(ctx context.Context, duration time.Duration) error {
+	select {
+	case <-time.After(duration):
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func NewDateRange(start time.Time, end time.Time) *DateRange {
@@ -12,6 +24,10 @@ func NewDateRange(start time.Time, end time.Time) *DateRange {
 		StartDate: start,
 		EndDate:   end,
 	}
+}
+
+func StartOfTomorrow() time.Time {
+	return StartOfDay(time.Now().AddDate(0, 0, 1))
 }
 
 func StartOfToday() time.Time {

@@ -5,7 +5,7 @@ CREATE TABLE repository_monthly_insights (
     `stars` INT DEFAULT NULL,
     `forks` INT DEFAULT NULL,
     `merged_prs` INT DEFAULT NULL,
-    `opened_issues` INT DEFAULT NULL,
+    `issues` INT DEFAULT NULL,
     `closed_issues` INT DEFAULT NULL,
     `completed_at` DATETIME(3) DEFAULT NULL,
     `last_ingested_at` DATETIME(3) DEFAULT NULL,

@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -15,7 +16,7 @@ var LanguageToScrape = []string{"", "javascript", "python", "go", "java", "php",
 
 var (
 	DatabaseDSN          string
-	GitHubToken          string
+	GitHubTokens         []string
 	GinMode              string
 	SignIngKey           string
 	AlgoliasearchAppId   string
@@ -24,12 +25,16 @@ var (
 	MeilisearchHost      string
 )
 
+var githubTokens string
+
 func Init() {
 	godotenv.Load(".env.local")
 	godotenv.Load(".env")
 
 	DatabaseDSN = os.Getenv("DATABASE_DSN")
-	GitHubToken = os.Getenv("GITHUB_TOKEN")
+	githubTokens = os.Getenv("GITHUB_TOKEN")
+	GitHubTokens = strings.Split(githubTokens, ",")
+
 	GinMode = os.Getenv("GIN_MODE")
 	SignIngKey = os.Getenv("SIGNING_KEY")
 	MeilisearchMasterKey = os.Getenv("MEILISEARCH_MASTER_KEY")

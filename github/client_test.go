@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetDeveloper(t *testing.T) {
-	client := Client{}
+	client := NewClient(NewTokenPool([]string{}, WithAllowEmptytoken(true)))
 
 	developer, err := client.GetDeveloper(context.Background(), "liweiyi88")
 	if err != nil {
@@ -36,7 +36,7 @@ func TestGetDeveloper(t *testing.T) {
 }
 
 func TestGetRepository(t *testing.T) {
-	client := Client{}
+	client := NewClient(NewTokenPool([]string{}, WithAllowEmptytoken(true)))
 
 	ghRepo, err := client.GetRepository(context.Background(), "liweiyi88/onedump")
 	if err != nil {

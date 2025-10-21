@@ -4,22 +4,19 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/liweiyi88/trendshift-backend/github"
 	"github.com/liweiyi88/trendshift-backend/model"
 	"github.com/liweiyi88/trendshift-backend/utils/datetime"
+	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
 	"golang.org/x/sync/errgroup"
 )
 
-// fetch from database, where completed_at is null
-// fetch monthly repository data from GitHub, upsert database, if the month is last month, then set the completed_at
+const batchSize = 1000
 
-// 1. CreateMonthlyInsightsIfNotExist
-// 2. select 100 repositories from the DB where updated_at is not today,
-// use updated_at ASC, fetch data and update the record (set completed_at if it is past month)
-// 3. keep select 100 repositories until null, then we can return
 type MonthlyRepoDataIngestor struct {
 	gh  *github.Client
 	rmr *model.RepositoryMonthlyInsightRepo
@@ -32,115 +29,127 @@ func NewMonthlyRepoDataIngestor(rmr *model.RepositoryMonthlyInsightRepo, gh *git
 	}
 }
 
-func (ingestor *MonthlyRepoDataIngestor) Ingest(ctx context.Context, month, year int) error {
+func (ingestor *MonthlyRepoDataIngestor) ingest(ctx context.Context, start, end time.Time, insight model.RepositoryMonthlyInsightWithName) error {
+	repoName := insight.RepositoryName
+
+	var forks, stars, mergedPrs, issues, closedIssues int
+	g, gctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		count, err := ingestor.fetchForks(gctx, repoName, start, end)
+		if err != nil {
+			slog.Error("failed to fetch monthly forks",
+				slog.String("repository", repoName),
+				slog.Any("error", err))
+			return err
+		}
+		forks = count
+		return nil
+	})
+
+	g.Go(func() error {
+		count, err := ingestor.fetchStars(gctx, repoName, start, end)
+		if err != nil {
+			slog.Error("failed to fetch monthly stars",
+				slog.String("repository", repoName),
+				slog.Any("error", err))
+			return err
+		}
+		stars = count
+		return nil
+	})
+
+	g.Go(func() error {
+		count, err := ingestor.fetchMergedPrs(gctx, repoName, start, end)
+		if err != nil {
+			slog.Error("failed to fetch monthly merged prs",
+				slog.String("repository", repoName),
+				slog.Any("error", err))
+			return err
+		}
+		mergedPrs = count
+		return nil
+	})
+
+	g.Go(func() error {
+		all, closed, err := ingestor.fetchIssues(gctx, repoName, start, end)
+		if err != nil {
+			slog.Error("failed to fetch monthly issues",
+				slog.String("repository", repoName),
+				slog.Any("error", err))
+
+			return err
+		}
+		issues = all
+		closedIssues = closed
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	insight.Stars = dbutils.NewNullInt64(stars)
+	insight.Forks = dbutils.NewNullInt64(forks)
+	insight.Issues = dbutils.NewNullInt64(issues)
+	insight.ClosedIssues = dbutils.NewNullInt64(closedIssues)
+	insight.MergedPrs = dbutils.NewNullInt64(mergedPrs)
+
+	now := time.Now()
+	if insight.Month == int(now.Month())-1 {
+		insight.CompletedAt = dbutils.NewNullTime(now)
+	}
+
+	insight.LastIngestedAt = dbutils.NewNullTime(now)
+
+	slog.Debug("completed fetching repo monthly data",
+		slog.String("repository", repoName),
+		slog.Int("stars", stars),
+		slog.Int("forks", forks),
+		slog.Int("issues", issues),
+		slog.Int("closedIssues", closedIssues),
+		slog.Int("mergedPrs", mergedPrs))
+
+	return ingestor.rmr.Update(ctx, insight)
+}
+
+func (ingestor *MonthlyRepoDataIngestor) Ingest(ctx context.Context, month, year int) (bool, error) {
 	_, err := ingestor.rmr.CreateMonthlyInsightsIfNotExist(ctx, month, year)
 
 	if err != nil {
-		return fmt.Errorf("failed to create monthly insights if not exist, error: %v", err)
+		return false, fmt.Errorf("failed to create monthly insights if not exist, error: %w", err)
 	}
 
-	montlyRepoInsights, err := ingestor.rmr.FindIncompletedLastIngestedBefore(ctx, datetime.StartOfToday(), 1000)
+	montlyRepoInsights, err := ingestor.rmr.FindIncompletedLastIngestedBefore(ctx, datetime.StartOfToday(), batchSize)
 	if err != nil {
-		return fmt.Errorf("failed to ingest repository monthly data, error: %v", err)
+		return false, fmt.Errorf("failed to ingest repository monthly data, error: %w", err)
+	}
+
+	if len(montlyRepoInsights) == 0 {
+		return true, nil
 	}
 
 	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
 	end := datetime.EndOfMonth(start)
 
-	for _, insight := range montlyRepoInsights {
-		fmt.Print(insight.Id)
-		// repoName := insight.RepositoryName
+	chunks := slices.Chunk(montlyRepoInsights, 10)
 
-		repoName := "liweiyi88/onedump"
-
-		var forks, stars, mergedPrs, closedIssues int
+	for chunk := range chunks {
 		g, gctx := errgroup.WithContext(ctx)
-
-		g.Go(func() error {
-			count, err := ingestor.fetchForks(gctx, repoName, start, end)
-			if err != nil {
-				slog.Error("failed to fetch monthly forks",
-					slog.String("repository", repoName),
-					slog.Any("error", err))
-				return err
-			}
-			forks = count
-			return nil
-		})
-
-		g.Go(func() error {
-			count, err := ingestor.fetchStars(gctx, repoName, start, end)
-			if err != nil {
-				slog.Error("failed to fetch monthly stars",
-					slog.String("repository", repoName),
-					slog.Any("error", err))
-				return err
-			}
-			stars = count
-			return nil
-		})
-
-		g.Go(func() error {
-			count, err := ingestor.fetchMergedPrs(gctx, repoName, start, end)
-			if err != nil {
-				slog.Error("failed to fetch monthly merged prs",
-					slog.String("repository", repoName),
-					slog.Any("error", err))
-				return err
-			}
-			mergedPrs = count
-			return nil
-		})
-
-		g.Go(func() error {
-			count, err := ingestor.fetchClosedIssues(gctx, repoName, start, end)
-			if err != nil {
-				slog.Error("failed to fetch monthly closed issues",
-					slog.String("repository", repoName),
-					slog.Any("error", err))
-				return err
-			}
-			closedIssues = count
-			return nil
-		})
-
-		if err := g.Wait(); err != nil {
-			slog.Warn("skipping repo due to fetch error", slog.String("repository", repoName), slog.Any("error", err))
-			continue
+		for _, insight := range chunk {
+			g.Go(func() error {
+				return ingestor.ingest(gctx, start, end, insight)
+			})
 		}
 
-		slog.Info("fetched repo monthly data",
-			slog.String("repository", repoName),
-			slog.Int("stars", stars),
-			slog.Int("forks", forks),
-			slog.Int("closedIssues", closedIssues),
-			slog.Int("mergedPrs", mergedPrs))
+		if err := g.Wait(); err != nil {
+			return false, err
+		}
 
-		// forks, err := ingestor.fetchForks(ctx, insight.RepositoryName, start, end)
-		// if err != nil {
-		// 	// @todo handle rate limit issue
-		// 	slog.Error("failed to fetch monthly forks", slog.String("repository", insight.RepositoryName), slog.Any("error", err))
-		// 	continue
-		// }
-
-		// slog.Info("fetched repo monthly forks", slog.Int("forks", forks), slog.String("repository", insight.RepositoryName))
-
-		// stars, err := ingestor.fetchStars(ctx, insight.RepositoryName, start, end)
-		// if err != nil {
-		// 	// @todo handle rate limit issue
-		// 	slog.Error("failed to fetch monthly stars", slog.String("repository", insight.RepositoryName), slog.Any("error", err))
-		// 	continue
-		// }
-
-		// slog.Info("fetched repo monthly stars", slog.Int("stars", stars), slog.String("repository", insight.RepositoryName))
-
-		// return nil
-		// fetch stars, fetch forks, fetch prs, fetch issues
-
-		return nil
+		ingestor.gh.TokenPool.ToString()
 	}
 
-	return nil
+	return false, nil
 }
 
 func fetchPaginated[T any](
@@ -162,7 +171,7 @@ func fetchPaginated[T any](
 	for {
 		data, nextCursor, err := fetchPage(ctx, owner, repo, cursor, &start, &end)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch paginated data: %v", err)
+			return nil, fmt.Errorf("failed to fetch paginated data: %w", err)
 		}
 
 		all = append(all, data...)
@@ -176,9 +185,17 @@ func fetchPaginated[T any](
 	return all, nil
 }
 
-func (ingestor *MonthlyRepoDataIngestor) fetchClosedIssues(ctx context.Context, repository string, start, end time.Time) (int, error) {
-	data, err := fetchPaginated(ctx, repository, start, end, ingestor.gh.GetClosedIssues)
-	return len(data), err
+func (ingestor *MonthlyRepoDataIngestor) fetchIssues(ctx context.Context, repository string, start, end time.Time) (int, int, error) {
+	data, err := fetchPaginated(ctx, repository, start, end, ingestor.gh.GetIssues)
+	closed := 0
+
+	for _, v := range data {
+		if v.Closed && !v.ClosedAt.IsZero() {
+			closed++
+		}
+	}
+
+	return len(data), closed, err
 }
 
 func (ingestor *MonthlyRepoDataIngestor) fetchMergedPrs(ctx context.Context, repository string, start, end time.Time) (int, error) {

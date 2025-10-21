@@ -2,6 +2,7 @@ package ingestcmd
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -14,8 +15,15 @@ import (
 	"github.com/liweiyi88/trendshift-backend/github"
 	"github.com/liweiyi88/trendshift-backend/ingestion"
 	"github.com/liweiyi88/trendshift-backend/model"
+	"github.com/liweiyi88/trendshift-backend/utils/datetime"
 	"github.com/spf13/cobra"
 )
+
+var verbose bool
+
+func init() {
+	ingestMonthlyRepositoryDataCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "prints additional debug information (optional)")
+}
 
 var ingestMonthlyRepositoryDataCmd = &cobra.Command{
 	Use:   "monthly-repository-data",
@@ -23,14 +31,11 @@ var ingestMonthlyRepositoryDataCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config.Init()
 
-		ctx, stop := context.WithCancel(context.Background())
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		db := database.GetInstance(ctx)
-		gh := github.NewClient(config.GitHubToken)
 
 		defer func() {
-			err := db.Close()
-
-			if err != nil {
+			if err := db.Close(); err != nil {
 				slog.Error("failed to close db", slog.Any("error", err))
 				sentry.CaptureException(err)
 			}
@@ -39,18 +44,48 @@ var ingestMonthlyRepositoryDataCmd = &cobra.Command{
 			sentry.Flush(2 * time.Second)
 		}()
 
-		appSignal := make(chan os.Signal, 3)
-		signal.Notify(appSignal, os.Interrupt, syscall.SIGTERM)
+		tokenPool := github.NewTokenPool(config.GitHubTokens)
+		gh := github.NewClient(tokenPool)
 
-		go func() {
-			<-appSignal
-			stop()
-		}()
+		if verbose {
+			slog.SetLogLoggerLevel(slog.LevelDebug)
+		}
 
 		rmr := model.NewRepositoryMonthlyInsightRepo(db)
 		ingestor := ingestion.NewMonthlyRepoDataIngestor(rmr, gh)
-
 		now := time.Now()
-		return ingestor.Ingest(ctx, int(now.Month()), now.Year())
+
+		for {
+			done, err := ingestor.Ingest(ctx, int(now.Month()), now.Year())
+			if errors.Is(err, github.ErrTokenNotAvailable) {
+				earliestResetAt := tokenPool.EarliestReset()
+
+				slog.Warn("no GitHub tokens available, sleeping until earliest reset", slog.Time("reset_at", earliestResetAt))
+				sleepDuration := time.Until(earliestResetAt)
+				if sleepDuration > 0 {
+					slog.Info("sleeping until tokens reset", slog.Duration("sleep", sleepDuration))
+
+					if err := datetime.SleepWithContext(ctx, sleepDuration); err != nil {
+						return err
+					}
+				}
+			}
+
+			if done {
+				sleepDuration := time.Until(datetime.StartOfTomorrow())
+				if sleepDuration > 0 {
+					slog.Info("Fetch jobs have been done, sleeping until start of tomorrow", slog.Duration("sleep", sleepDuration))
+					if err := datetime.SleepWithContext(ctx, sleepDuration); err != nil {
+						// Graceful shutdown will cancell the context, lets just return the ctx error.
+						return err
+					}
+				}
+			}
+
+			// Unhandled error, return and let command failed
+			if err != nil {
+				return err
+			}
+		}
 	},
 }

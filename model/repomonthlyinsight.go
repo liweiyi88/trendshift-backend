@@ -17,7 +17,7 @@ type RepositoryMonthlyInsight struct {
 	Stars          dbutils.NullInt64 `json:"stars"`
 	Forks          dbutils.NullInt64 `json:"forks"`
 	MergedPrs      dbutils.NullInt64 `json:"merged_prs"`
-	OpenedIssues   dbutils.NullInt64 `json:"opened_issues"`
+	Issues         dbutils.NullInt64 `json:"issues"`
 	ClosedIssues   dbutils.NullInt64 `json:"closed_issues"`
 	CompletedAt    dbutils.NullTime  `json:"completed_at"`
 	LastIngestedAt dbutils.NullTime  `json:"last_ingested_at"`
@@ -80,6 +80,42 @@ func (rr *RepositoryMonthlyInsightRepo) CreateMonthlyInsightsIfNotExist(ctx cont
 	return lastInsertId, nil
 }
 
+func (rr *RepositoryMonthlyInsightRepo) Update(ctx context.Context, data RepositoryMonthlyInsightWithName) error {
+	query := "UPDATE `repository_monthly_insights` SET year = ?, month = ?, stars = ?, forks = ?, merged_prs = ?, issues = ?, closed_issues = ?, completed_at = ?, last_ingested_at = ?, updated_at = ? WHERE id = ?"
+
+	updatedAt := time.Now()
+
+	result, err := rr.db.ExecContext(
+		ctx, query,
+		data.Year,
+		data.Month,
+		data.Stars,
+		data.Forks,
+		data.MergedPrs,
+		data.Issues,
+		data.ClosedIssues,
+		data.CompletedAt,
+		data.LastIngestedAt,
+		updatedAt.Format(time.DateTime),
+		data.Id)
+
+	if err != nil {
+		return fmt.Errorf("failed to run repository_monthly_insights update query, id: %d, error: %v", data.Id, err)
+	}
+
+	n, err := result.RowsAffected()
+
+	if err != nil {
+		return fmt.Errorf("repository_monthly_insights update rows affected returns error: %v", err)
+	}
+
+	if n != 1 {
+		return fmt.Errorf("unexpected number of rows affected after update: %d", n)
+	}
+
+	return nil
+}
+
 func (rr *RepositoryMonthlyInsightRepo) FindIncompletedLastIngestedBefore(ctx context.Context, before time.Time, limit int) ([]RepositoryMonthlyInsightWithName, error) {
 	query := "select ri.*, repositories.full_name from repository_monthly_insights as ri JOIN repositories ON ri.repository_id = repositories.id where (ri.completed_at is null) AND (ri.last_ingested_at is null OR ri.last_ingested_at < ?) order by ri.last_ingested_at ASC limit ?"
 	args := []any{before.Format(time.DateTime), limit}
@@ -107,7 +143,7 @@ func (rr *RepositoryMonthlyInsightRepo) FindIncompletedLastIngestedBefore(ctx co
 			&repoInsight.Stars,
 			&repoInsight.Forks,
 			&repoInsight.MergedPrs,
-			&repoInsight.OpenedIssues,
+			&repoInsight.Issues,
 			&repoInsight.ClosedIssues,
 			&repoInsight.CompletedAt,
 			&repoInsight.LastIngestedAt,

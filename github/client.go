@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -69,6 +70,7 @@ type GraphQLResponse struct {
 						Closed    bool   `json:"closed"`
 						ClosedAt  string `json:"closedAt"`
 						CreatedAt string `json:"createdAt"`
+						UpdatedAt string `json:"updatedAt"`
 						Author    struct {
 							Login string `json:"login"`
 						} `json:"author"`
@@ -116,14 +118,6 @@ type GraphQLResponse struct {
 	} `json:"data"`
 }
 
-func printRateLimitHeaders(name string, res http.Response) {
-	slog.Info(name, slog.Group("github",
-		slog.String("X-Ratelimit-Limit", res.Header.Get("X-Ratelimit-Limit")),
-		slog.String("X-Ratelimit-Remaining", res.Header.Get("X-Ratelimit-Remaining")),
-		slog.String("X-Ratelimit-Reset", res.Header.Get("X-Ratelimit-Reset")),
-	))
-}
-
 func checkGitHubResponse(res *http.Response, body []byte, context string) error {
 	switch res.StatusCode {
 	case http.StatusOK:
@@ -140,19 +134,19 @@ func checkGitHubResponse(res *http.Response, body []byte, context string) error 
 }
 
 type Client struct {
-	Token string // the personal acesss token, if set, the common rate limit is 5000 reqs/hour, otherwise, it will be 60 reqs/hour.
+	TokenPool *TokenPool
 }
 
-func NewClient(token string) *Client {
+func NewClient(tokenPool *TokenPool) *Client {
 	return &Client{
-		Token: token,
+		TokenPool: tokenPool,
 	}
 }
 
-func fetchPaginated[T any](
+func fetch[T any](
 	ctx context.Context,
 	query string,
-	token string,
+	tokenPool *TokenPool,
 	owner, repo string,
 	cursor *string,
 	extractEdges func(body []byte) ([]T, *string, error),
@@ -178,7 +172,16 @@ func fetchPaginated[T any](
 		return nil, nil, fmt.Errorf("[github graphql] failed to create new http request, error: %v", err)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+token)
+	token, err := tokenPool.GetToken()
+	if err != nil {
+		return nil, nil, fmt.Errorf("[github graphql] failed to get token from token pool, error: %w", err)
+	}
+
+	// Also allow to send request without token
+	if strings.TrimSpace(token) != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -204,7 +207,18 @@ func fetchPaginated[T any](
 		return nil, nil, err
 	}
 
-	printRateLimitHeaders("github graphql", *res)
+	slog.Debug("fetching repo monthly date", slog.String("repository", fmt.Sprintf("%s/%s", owner, repo)))
+
+	remainingStr := res.Header.Get("X-Ratelimit-Remaining")
+	remaining, err := strconv.ParseInt(remainingStr, 10, 64)
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("[github graphql] failed to parse X-Ratelimit-Remaining to int")
+	}
+
+	resetAt := res.Header.Get("X-Ratelimit-Reset")
+	tokenPool.Update(token, int(remaining), resetAt)
+
 	return extractEdges(body)
 }
 
@@ -273,10 +287,10 @@ query ($owner: String!, $repo: String!, $after: String) {
 		return forks, nextCursor, nil
 	}
 
-	return fetchPaginated(ctx, query, ghClient.Token, owner, repo, cursor, extractEdges)
+	return fetch(ctx, query, ghClient.TokenPool, owner, repo, cursor, extractEdges)
 }
 
-func (ghClient *Client) GetClosedIssues(
+func (ghClient *Client) GetIssues(
 	ctx context.Context,
 	owner, repo string,
 	cursor *string,
@@ -284,13 +298,14 @@ func (ghClient *Client) GetClosedIssues(
 	query := `
 query ($owner: String!, $repo: String!, $after: String) {
   repository(owner: $owner, name: $repo) {
-    issues(first: 100, after: $after, states: CLOSED, orderBy: {field: UPDATED_AT, direction: DESC}) {
+    issues(first: 100, after: $after, orderBy: {field: UPDATED_AT, direction: DESC}) {
       edges {
 	    node {
 		  number
           title
 		  closed
 		  createdAt
+		  updatedAt
           closedAt
           author {
             login
@@ -309,29 +324,39 @@ query ($owner: String!, $repo: String!, $after: String) {
 	extractEdges := func(body []byte) ([]Issue, *string, error) {
 		var gqlResp GraphQLResponse
 		if err := json.Unmarshal(body, &gqlResp); err != nil {
-			return nil, nil, fmt.Errorf("[closed issue] failed to unmarshal graphql response, error: %v", err)
+			return nil, nil, fmt.Errorf("[issues] failed to unmarshal graphql response, error: %v", err)
 		}
 
-		closedIssues := make([]Issue, 0, len(gqlResp.Data.Repository.Issues.Edges))
+		issues := make([]Issue, 0, len(gqlResp.Data.Repository.Issues.Edges))
 
 		for _, edge := range gqlResp.Data.Repository.Issues.Edges {
-
 			createdAt, err := time.Parse(time.RFC3339, edge.Node.CreatedAt)
 			if err != nil {
-				return nil, nil, fmt.Errorf("[closed issue] failed to parse createdAt %s, error: %v", createdAt, err)
+				return nil, nil, fmt.Errorf("[issues] failed to parse createdAt %s, error: %v", createdAt, err)
 			}
 
-			closedAt, err := time.Parse(time.RFC3339, edge.Node.ClosedAt)
+			updatedAt, err := time.Parse(time.RFC3339, edge.Node.UpdatedAt)
 			if err != nil {
-				return nil, nil, fmt.Errorf("[closed issue] failed to parse closedAt %s, error: %v", closedAt, err)
+				return nil, nil, fmt.Errorf("[issues] failed to parse updatedAt %s, error: %v", updatedAt, err)
 			}
 
-			if start != nil && closedAt.Before(*start) {
-				return closedIssues, nil, nil
+			var closedAt time.Time
+
+			if edge.Node.ClosedAt != "" {
+				t, err := time.Parse(time.RFC3339, edge.Node.ClosedAt)
+				if err != nil {
+					return nil, nil, fmt.Errorf("[issues] failed to parse closedAt %s, error: %v", closedAt, err)
+				}
+
+				closedAt = t
 			}
 
-			if end != nil && closedAt.After(*end) {
-				return closedIssues, nil, nil
+			if start != nil && updatedAt.Before(*start) {
+				return issues, nil, nil
+			}
+
+			if end != nil && updatedAt.After(*end) {
+				return issues, nil, nil
 			}
 
 			issue := Issue{
@@ -342,7 +367,7 @@ query ($owner: String!, $repo: String!, $after: String) {
 				ClosedAt:  closedAt,
 			}
 
-			closedIssues = append(closedIssues, issue)
+			issues = append(issues, issue)
 		}
 
 		var nextCursor *string
@@ -350,10 +375,10 @@ query ($owner: String!, $repo: String!, $after: String) {
 			nextCursor = &gqlResp.Data.Repository.Issues.PageInfo.EndCursor
 		}
 
-		return closedIssues, nextCursor, nil
+		return issues, nextCursor, nil
 	}
 
-	return fetchPaginated(ctx, query, ghClient.Token, owner, repo, cursor, extractEdges)
+	return fetch(ctx, query, ghClient.TokenPool, owner, repo, cursor, extractEdges)
 }
 
 func (ghClient *Client) GetMergedPrs(
@@ -422,7 +447,7 @@ query ($owner: String!, $repo: String!, $after: String) {
 		return prs, nextCursor, nil
 	}
 
-	return fetchPaginated(ctx, query, ghClient.Token, owner, repo, cursor, extractEdges)
+	return fetch(ctx, query, ghClient.TokenPool, owner, repo, cursor, extractEdges)
 }
 
 func (ghClient *Client) GetRepositoryStars(
@@ -487,13 +512,18 @@ query ($owner: String!, $repo: String!, $after: String) {
 		return stars, nextCursor, nil
 	}
 
-	return fetchPaginated(ctx, query, ghClient.Token, owner, repo, cursor, extractEdges)
+	return fetch(ctx, query, ghClient.TokenPool, owner, repo, cursor, extractEdges)
 }
 
 func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (model.Developer, error) {
 	url := fmt.Sprintf("%s/%s", "https://api.github.com/users", username)
 
 	var developer model.Developer
+
+	token, err := ghClient.TokenPool.GetToken()
+	if err != nil {
+		return developer, err
+	}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -502,8 +532,9 @@ func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (mode
 
 	req.Header.Set("Accept", "application/vnd.github+json")
 
-	if strings.TrimSpace(ghClient.Token) != "" {
-		req.Header.Set("Authorization", "Bearer "+ghClient.Token)
+	// Also allow to send request without token
+	if strings.TrimSpace(token) != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
 	client := &http.Client{}
@@ -532,7 +563,15 @@ func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (mode
 		return developer, fmt.Errorf("failed to decode developer body err: %v, received: %s, status code: %s", err, string(body), res.Status)
 	}
 
-	printRateLimitHeaders(developer.Username, *res)
+	remainingStr := res.Header.Get("X-Ratelimit-Remaining")
+	remaining, err := strconv.ParseInt(remainingStr, 10, 64)
+
+	if err != nil {
+		return developer, fmt.Errorf("[github graphql] failed to parse X-Ratelimit-Remaining to int")
+	}
+
+	resetAt := res.Header.Get("X-Ratelimit-Reset")
+	ghClient.TokenPool.Update(token, int(remaining), resetAt)
 
 	return developer, checkGitHubResponse(res, body, "developer")
 }
@@ -547,10 +586,16 @@ func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (mod
 		return ghRepository, err
 	}
 
+	token, err := ghClient.TokenPool.GetToken()
+	if err != nil {
+		return ghRepository, err
+	}
+
 	req.Header.Set("Accept", "application/vnd.github+json")
 
-	if strings.TrimSpace(ghClient.Token) != "" {
-		req.Header.Set("Authorization", "Bearer "+ghClient.Token)
+	// Also allow to send reqeusts without token
+	if strings.TrimSpace(token) != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
 	client := &http.Client{}
@@ -577,7 +622,15 @@ func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (mod
 		return ghRepository, fmt.Errorf("failed to decode repository body: %v", err)
 	}
 
-	printRateLimitHeaders(ghRepository.FullName, *res)
+	remainingStr := res.Header.Get("X-Ratelimit-Remaining")
+	remaining, err := strconv.ParseInt(remainingStr, 10, 64)
+
+	if err != nil {
+		return ghRepository, fmt.Errorf("[github graphql] failed to parse X-Ratelimit-Remaining to int")
+	}
+
+	resetAt := res.Header.Get("X-Ratelimit-Reset")
+	ghClient.TokenPool.Update(token, int(remaining), resetAt)
 
 	return ghRepository, checkGitHubResponse(res, body, "repository")
 }
