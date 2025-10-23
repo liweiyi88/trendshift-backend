@@ -157,7 +157,7 @@ func syncRateLimitData(token string, tokenPool *TokenPool, res *http.Response) e
 
 	remaining, err := strconv.ParseInt(remainingStr, 10, 64)
 	if err != nil {
-		return fmt.Errorf("failed to parse remaing to int, remaing: %s", remainingStr)
+		return fmt.Errorf("failed to parse remaining to int, remaining: %s", remainingStr)
 	}
 
 	resetUnix, err := strconv.ParseInt(resetAtStr, 10, 64)
@@ -617,7 +617,7 @@ func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (mod
 
 	req.Header.Set("Accept", "application/vnd.github+json")
 
-	// Also allow to send reqeusts without token
+	// Also allow to send requests without token
 	if strings.TrimSpace(token) != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}

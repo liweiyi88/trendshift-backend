@@ -26,22 +26,22 @@ type Trending struct {
 }
 
 type GhRepository struct {
-	Id                 int                `json:"repository_id"` // primary key saved in DB.
-	GhrId              int                `json:"id"`            // id from github repository api response.
-	FullName           string             `json:"full_name"`
-	Owner              Owner              `json:"owner"`
-	Forks              int                `json:"forks"`
-	Stars              int                `json:"watchers"`
-	Language           string             `json:"language"`
-	Description        dbutils.NullString `json:"description"`
-	DefaultBranch      dbutils.NullString `json:"default_branch"`
-	Homepage           dbutils.NullString `json:"homepage"`
-	RepositryCreatedAt dbutils.NullTime   `json:"repository_created_at"`
-	Skipped            bool               `json:"skipped"`
-	Tags               []Tag              `json:"tags"`
-	Trendings          []Trending         `json:"trendings"`
-	CreatedAt          time.Time          `json:"created_at"`
-	UpdatedAt          time.Time          `json:"updated_at"`
+	Id                  int                `json:"repository_id"` // primary key saved in DB.
+	GhrId               int                `json:"id"`            // id from github repository api response.
+	FullName            string             `json:"full_name"`
+	Owner               Owner              `json:"owner"`
+	Forks               int                `json:"forks"`
+	Stars               int                `json:"watchers"`
+	Language            string             `json:"language"`
+	Description         dbutils.NullString `json:"description"`
+	DefaultBranch       dbutils.NullString `json:"default_branch"`
+	Homepage            dbutils.NullString `json:"homepage"`
+	RepositoryCreatedAt dbutils.NullTime   `json:"repository_created_at"`
+	Skipped             bool               `json:"skipped"`
+	Tags                []Tag              `json:"tags"`
+	Trendings           []Trending         `json:"trendings"`
+	CreatedAt           time.Time          `json:"created_at"`
+	UpdatedAt           time.Time          `json:"updated_at"`
 }
 
 func (gr GhRepository) GetDescription() string {
@@ -115,7 +115,7 @@ func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository,
 			&ghr.Description,
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
-			&ghr.RepositryCreatedAt,
+			&ghr.RepositoryCreatedAt,
 			&ghr.Skipped,
 			&trending.TrendDate,
 			&trending.Rank,
@@ -161,7 +161,7 @@ func (gr *GhRepositoryRepo) FindByName(ctx context.Context, name string) (GhRepo
 		&ghr.Description,
 		&ghr.DefaultBranch,
 		&ghr.Homepage,
-		&ghr.RepositryCreatedAt,
+		&ghr.RepositoryCreatedAt,
 		&ghr.Skipped,
 	); err != nil {
 		return ghr, err
@@ -221,7 +221,7 @@ func (gr *GhRepositoryRepo) FindAll(ctx context.Context, opts ...any) ([]GhRepos
 			&ghr.Description,
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
-			&ghr.RepositryCreatedAt,
+			&ghr.RepositoryCreatedAt,
 			&ghr.Skipped,
 		); err != nil {
 			return nil, err
@@ -276,7 +276,7 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 			&ghr.Description,
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
-			&ghr.RepositryCreatedAt,
+			&ghr.RepositoryCreatedAt,
 			&ghr.Skipped,
 			&tagId,
 			&tagName,
@@ -363,7 +363,7 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, opts .
 			&trr.Description,
 			&trr.DefaultBranch,
 			&trr.Homepage,
-			&trr.RepositryCreatedAt,
+			&trr.RepositoryCreatedAt,
 			&trr.Skipped,
 			&trr.FeaturedCount,
 			&trr.BestRanking,
@@ -415,7 +415,7 @@ func (gr *GhRepositoryRepo) FindRepositoriesByNames(ctx context.Context, names [
 			&ghr.Description,
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
-			&ghr.RepositryCreatedAt,
+			&ghr.RepositoryCreatedAt,
 			&ghr.Skipped,
 		); err != nil {
 			return ghRepos, err

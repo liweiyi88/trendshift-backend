@@ -17,7 +17,7 @@ var rootCmd = &cobra.Command{}
 func init() {
 	rootCmd.AddCommand(searchcmd.SearchCmd)
 	rootCmd.AddCommand(usercmd.UserCmd)
-	rootCmd.AddCommand(githubcmd.GihtubSyncCmd)
+	rootCmd.AddCommand(githubcmd.GitHubSyncCmd)
 	rootCmd.AddCommand(scrapecmd.ScrapeCmd)
 	rootCmd.AddCommand(ingestcmd.IngestCmd)
 }

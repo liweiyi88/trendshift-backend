@@ -67,7 +67,7 @@ var migrateCmd = &cobra.Command{
 		case "down":
 			err = m.Steps(-1)
 		default:
-			err = errors.New("unsupported action, only 'up' or 'down' are valida action")
+			err = errors.New("unsupported action, only 'up' or 'down' are valid action")
 		}
 
 		if err != nil && !errors.Is(err, migrate.ErrNoChange) {

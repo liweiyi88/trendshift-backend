@@ -28,12 +28,12 @@ var limit int
 // If run as cronjob, a suggested command to avoid sending too many requests to GitHub is
 // `sync [repository|developer] --end=-2d --limit=500` and run it hourly.
 func init() {
-	GihtubSyncCmd.Flags().StringVarP(&start, "start", "s", "", "--start \"2023-01-06 14:35:00\" ")
-	GihtubSyncCmd.Flags().StringVarP(&end, "end", "e", "", "--end \"2023-10-06 14:35:00\", --end=-2d or --end=2h, `d` for days, `h` for hours ")
-	GihtubSyncCmd.Flags().IntVarP(&limit, "limit", "l", 0, "--limit=100")
+	GitHubSyncCmd.Flags().StringVarP(&start, "start", "s", "", "--start \"2023-01-06 14:35:00\" ")
+	GitHubSyncCmd.Flags().StringVarP(&end, "end", "e", "", "--end \"2023-10-06 14:35:00\", --end=-2d or --end=2h, `d` for days, `h` for hours ")
+	GitHubSyncCmd.Flags().IntVarP(&limit, "limit", "l", 0, "--limit=100")
 }
 
-var GihtubSyncCmd = &cobra.Command{
+var GitHubSyncCmd = &cobra.Command{
 	Use:   "sync [repository|developer]",
 	Short: "Sync the latest repositories or developers details from GitHub",
 	Args:  cobra.ExactArgs(1),

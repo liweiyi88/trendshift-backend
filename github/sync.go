@@ -90,7 +90,7 @@ func (s *SyncHandler) updateDevelopers(ctx context.Context, developers []model.D
 					slog.Info(fmt.Sprintf("not found on GitHub, developer: %s", developer.Username))
 					developer.Skipped = true
 				} else if errors.Is(err, ErrAccessBlocked) {
-					slog.Info(fmt.Sprintf("developer access blocked due to leagl reason, developer: %s", developer.Username))
+					slog.Info(fmt.Sprintf("developer access blocked due to legal reason, developer: %s", developer.Username))
 					developer.Skipped = true
 				} else {
 					return fmt.Errorf("failed to get developer details from GitHub: %v", err)

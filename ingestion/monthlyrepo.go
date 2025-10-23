@@ -83,7 +83,10 @@ func (ingestor *MonthlyRepoDataIngestor) ingest(ctx context.Context, start, end 
 	insight.MergedPrs = dbutils.NewNullInt64(mergedPrs)
 
 	now := time.Now()
-	if insight.Month == int(now.Month())-1 {
+	lastMonth := time.Now().AddDate(0, -1, 0)
+	if insight.Year < lastMonth.Year() ||
+		(insight.Month <= int(lastMonth.Month()) &&
+			insight.Year == lastMonth.Year()) {
 		insight.CompletedAt = dbutils.NewNullTime(now)
 	}
 

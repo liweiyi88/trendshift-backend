@@ -37,8 +37,8 @@ func (search *Meilisearch) UpsertDevelopers(developers ...model.Developer) error
 	}
 
 	if len(documents) > 0 {
-		primayKey := "id"
-		_, err := search.client.Index(developerIndex).UpdateDocuments(documents, &primayKey)
+		primaryKey := "id"
+		_, err := search.client.Index(developerIndex).UpdateDocuments(documents, &primaryKey)
 
 		if err != nil {
 			return fmt.Errorf("failed to upsert developers: %v", err)
@@ -60,8 +60,8 @@ func (search *Meilisearch) UpsertRepositories(repositories ...model.GhRepository
 	}
 
 	if len(documents) > 0 {
-		primayKey := "id"
-		_, err := search.client.Index(repositoryIndex).UpdateDocuments(documents, &primayKey)
+		primaryKey := "id"
+		_, err := search.client.Index(repositoryIndex).UpdateDocuments(documents, &primaryKey)
 
 		if err != nil {
 			return fmt.Errorf("failed to upsert repositories: %v", err)
