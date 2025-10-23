@@ -45,8 +45,10 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 			if err != nil {
 				if errors.Is(err, ErrNotFound) {
 					slog.Info(fmt.Sprintf("repository not found on GitHub, repository: %s", repository.FullName))
+					repository.Skipped = true
 				} else if errors.Is(err, ErrAccessBlocked) {
 					slog.Info(fmt.Sprintf("repository access blocked, repository: %s", repository.FullName))
+					repository.Skipped = true
 				} else {
 					return fmt.Errorf("failed to get repository details from GitHub: %v", err)
 				}
@@ -86,8 +88,10 @@ func (s *SyncHandler) updateDevelopers(ctx context.Context, developers []model.D
 			if err != nil {
 				if errors.Is(err, ErrNotFound) {
 					slog.Info(fmt.Sprintf("not found on GitHub, developer: %s", developer.Username))
+					developer.Skipped = true
 				} else if errors.Is(err, ErrAccessBlocked) {
 					slog.Info(fmt.Sprintf("developer access blocked due to leagl reason, developer: %s", developer.Username))
+					developer.Skipped = true
 				} else {
 					return fmt.Errorf("failed to get developer details from GitHub: %v", err)
 				}

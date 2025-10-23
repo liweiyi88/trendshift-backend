@@ -27,6 +27,7 @@ type Developer struct {
 	PublicGists     int                `json:"public_gists"`
 	Followers       int                `json:"followers"`
 	Following       int                `json:"following"`
+	Skipped         bool               `json:"skipped"`
 	Trendings       []Trending         `json:"trendings"`
 	CreatedAt       time.Time          `json:"created_at"`
 	UpdatedAt       time.Time          `json:"updated_at"`
@@ -52,6 +53,8 @@ func (dr *DeveloperRepo) FindAll(ctx context.Context, opts ...any) ([]Developer,
 
 	options := opt.ExtractOptions(opts...)
 	start, end, limit := options.Start, options.End, options.Limit
+
+	qb.Where("skipped = ?", false)
 
 	if start != "" {
 		qb.Where("updated_at > ?", start)
@@ -97,6 +100,7 @@ func (dr *DeveloperRepo) FindAll(ctx context.Context, opts ...any) ([]Developer,
 			&dev.Following,
 			&dev.CreatedAt,
 			&dev.UpdatedAt,
+			&dev.Skipped,
 		); err != nil {
 			return nil, err
 		}
@@ -150,6 +154,7 @@ func (dr *DeveloperRepo) FindById(ctx context.Context, id int) (Developer, error
 			&developer.Following,
 			&developer.CreatedAt,
 			&developer.UpdatedAt,
+			&developer.Skipped,
 			&trending.TrendDate,
 			&trending.Rank,
 			&trending.TrendingLanguage,
@@ -236,6 +241,7 @@ func (dr *DeveloperRepo) FindTrendingDevelopers(ctx context.Context, opts ...any
 			&dev.Following,
 			&dev.CreatedAt,
 			&dev.UpdatedAt,
+			&dev.Skipped,
 			&dev.FeaturedCount,
 			&dev.BestRanking,
 		); err != nil {
@@ -254,7 +260,7 @@ func (dr *DeveloperRepo) FindTrendingDevelopers(ctx context.Context, opts ...any
 }
 
 func (dr *DeveloperRepo) Update(ctx context.Context, developer Developer) error {
-	query := "UPDATE `developers` SET avatar_url = ?, name = ?, company = ?, blog = ?, location = ?, email = ?, bio = ?, twitter_username = ?, public_repos = ?, public_gists = ?, followers = ?, following = ?, updated_at = ? WHERE id = ?"
+	query := "UPDATE `developers` SET avatar_url = ?, name = ?, company = ?, blog = ?, location = ?, email = ?, bio = ?, twitter_username = ?, public_repos = ?, public_gists = ?, followers = ?, following = ?, skipped = ?, updated_at = ? WHERE id = ?"
 
 	updatedAt := time.Now()
 
@@ -272,6 +278,7 @@ func (dr *DeveloperRepo) Update(ctx context.Context, developer Developer) error 
 		developer.PublicGists,
 		developer.Followers,
 		developer.Following,
+		developer.Skipped,
 		updatedAt.Format(time.DateTime),
 		developer.Id)
 
@@ -373,7 +380,8 @@ func (dr *DeveloperRepo) FindDevelopersByUsernames(ctx context.Context, names []
 			&developer.Followers,
 			&developer.Following,
 			&developer.CreatedAt,
-			&developer.UpdatedAt); err != nil {
+			&developer.UpdatedAt,
+			&developer.Skipped); err != nil {
 			return developers, err
 		}
 

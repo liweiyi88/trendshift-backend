@@ -37,6 +37,7 @@ type GhRepository struct {
 	DefaultBranch      dbutils.NullString `json:"default_branch"`
 	Homepage           dbutils.NullString `json:"homepage"`
 	RepositryCreatedAt dbutils.NullTime   `json:"repository_created_at"`
+	Skipped            bool               `json:"skipped"`
 	Tags               []Tag              `json:"tags"`
 	Trendings          []Trending         `json:"trendings"`
 	CreatedAt          time.Time          `json:"created_at"`
@@ -115,6 +116,7 @@ func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository,
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
 			&ghr.RepositryCreatedAt,
+			&ghr.Skipped,
 			&trending.TrendDate,
 			&trending.Rank,
 			&trending.TrendingLanguage,
@@ -160,6 +162,7 @@ func (gr *GhRepositoryRepo) FindByName(ctx context.Context, name string) (GhRepo
 		&ghr.DefaultBranch,
 		&ghr.Homepage,
 		&ghr.RepositryCreatedAt,
+		&ghr.Skipped,
 	); err != nil {
 		return ghr, err
 	}
@@ -175,6 +178,8 @@ func (gr *GhRepositoryRepo) FindAll(ctx context.Context, opts ...any) ([]GhRepos
 	options := opt.ExtractOptions(opts...)
 
 	start, end, limit := options.Start, options.End, options.Limit
+
+	qb.Where("skipped = ?", false)
 
 	if start != "" {
 		qb.Where("updated_at > ?", start)
@@ -217,6 +222,7 @@ func (gr *GhRepositoryRepo) FindAll(ctx context.Context, opts ...any) ([]GhRepos
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
 			&ghr.RepositryCreatedAt,
+			&ghr.Skipped,
 		); err != nil {
 			return nil, err
 		}
@@ -271,6 +277,7 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
 			&ghr.RepositryCreatedAt,
+			&ghr.Skipped,
 			&tagId,
 			&tagName,
 		); err != nil {
@@ -357,6 +364,7 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, opts .
 			&trr.DefaultBranch,
 			&trr.Homepage,
 			&trr.RepositryCreatedAt,
+			&trr.Skipped,
 			&trr.FeaturedCount,
 			&trr.BestRanking,
 		); err != nil {
@@ -408,6 +416,7 @@ func (gr *GhRepositoryRepo) FindRepositoriesByNames(ctx context.Context, names [
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
 			&ghr.RepositryCreatedAt,
+			&ghr.Skipped,
 		); err != nil {
 			return ghRepos, err
 		}
@@ -463,11 +472,25 @@ func (gr *GhRepositoryRepo) Save(ctx context.Context, ghRepo GhRepository) (int6
 }
 
 func (gr *GhRepositoryRepo) Update(ctx context.Context, ghRepo GhRepository) error {
-	query := "UPDATE `repositories` SET full_name = ?, ghr_id = ?, stars = ?, forks = ?, language = ?, owner = ?, owner_avatar_url = ?, description = ?, default_branch = ?, homepage = ?, updated_at = ? WHERE id = ?"
+	query := "UPDATE `repositories` SET full_name = ?, ghr_id = ?, stars = ?, forks = ?, language = ?, owner = ?, owner_avatar_url = ?, description = ?, default_branch = ?, homepage = ?, skipped =?, updated_at = ? WHERE id = ?"
 
 	updatedAt := time.Now()
 
-	result, err := gr.db.ExecContext(ctx, query, ghRepo.FullName, ghRepo.GhrId, ghRepo.Stars, ghRepo.Forks, ghRepo.Language, ghRepo.Owner.Name, ghRepo.Owner.AvatarUrl, ghRepo.GetDescription(), ghRepo.DefaultBranch, ghRepo.Homepage, updatedAt.Format(time.DateTime), ghRepo.Id)
+	result, err := gr.db.ExecContext(
+		ctx,
+		query,
+		ghRepo.FullName,
+		ghRepo.GhrId,
+		ghRepo.Stars,
+		ghRepo.Forks,
+		ghRepo.Language,
+		ghRepo.Owner.Name,
+		ghRepo.Owner.AvatarUrl,
+		ghRepo.GetDescription(),
+		ghRepo.DefaultBranch,
+		ghRepo.Homepage,
+		ghRepo.Skipped,
+		updatedAt.Format(time.DateTime), ghRepo.Id)
 
 	if err != nil {
 		return fmt.Errorf("failed to run repositories update query, gh repo id: %d, error: %v", ghRepo.Id, err)

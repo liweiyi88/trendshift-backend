@@ -18,4 +18,8 @@ CREATE TABLE repository_monthly_insights (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE repositories
-ADD COLUMN repository_created_at DATETIME(3) DEFAULT NULL;
+ADD COLUMN repository_created_at DATETIME(3) DEFAULT NULL,
+ADD COLUMN skipped BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE developers
+ADD COLUMN skipped BOOLEAN NOT NULL DEFAULT FALSE;
