@@ -85,6 +85,20 @@ func (rr *RepositoryMonthlyInsightRepo) Update(ctx context.Context, data Reposit
 
 	updatedAt := time.Now()
 
+	var completedAt, lastIngestedAt any
+
+	if data.CompletedAt.Valid {
+		completedAt = data.CompletedAt.Time.Format(time.DateTime)
+	} else {
+		completedAt = nil
+	}
+
+	if data.LastIngestedAt.Valid {
+		lastIngestedAt = data.LastIngestedAt.Time.Format(time.DateTime)
+	} else {
+		lastIngestedAt = nil
+	}
+
 	result, err := rr.db.ExecContext(
 		ctx, query,
 		data.Year,
@@ -94,8 +108,8 @@ func (rr *RepositoryMonthlyInsightRepo) Update(ctx context.Context, data Reposit
 		data.MergedPrs,
 		data.Issues,
 		data.ClosedIssues,
-		data.CompletedAt,
-		data.LastIngestedAt,
+		completedAt,
+		lastIngestedAt,
 		updatedAt.Format(time.DateTime),
 		data.Id)
 

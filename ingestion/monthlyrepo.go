@@ -38,9 +38,6 @@ func (ingestor *MonthlyRepoDataIngestor) ingest(ctx context.Context, start, end 
 	g.Go(func() error {
 		count, err := ingestor.fetchForks(gctx, repoName, start, end)
 		if err != nil {
-			slog.Error("failed to fetch monthly forks",
-				slog.String("repository", repoName),
-				slog.Any("error", err))
 			return err
 		}
 		forks = count
@@ -50,9 +47,6 @@ func (ingestor *MonthlyRepoDataIngestor) ingest(ctx context.Context, start, end 
 	g.Go(func() error {
 		count, err := ingestor.fetchStars(gctx, repoName, start, end)
 		if err != nil {
-			slog.Error("failed to fetch monthly stars",
-				slog.String("repository", repoName),
-				slog.Any("error", err))
 			return err
 		}
 		stars = count
@@ -62,9 +56,6 @@ func (ingestor *MonthlyRepoDataIngestor) ingest(ctx context.Context, start, end 
 	g.Go(func() error {
 		count, err := ingestor.fetchMergedPrs(gctx, repoName, start, end)
 		if err != nil {
-			slog.Error("failed to fetch monthly merged prs",
-				slog.String("repository", repoName),
-				slog.Any("error", err))
 			return err
 		}
 		mergedPrs = count
@@ -74,10 +65,6 @@ func (ingestor *MonthlyRepoDataIngestor) ingest(ctx context.Context, start, end 
 	g.Go(func() error {
 		all, closed, err := ingestor.fetchIssues(gctx, repoName, start, end)
 		if err != nil {
-			slog.Error("failed to fetch monthly issues",
-				slog.String("repository", repoName),
-				slog.Any("error", err))
-
 			return err
 		}
 		issues = all
