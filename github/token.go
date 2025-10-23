@@ -2,10 +2,7 @@ package github
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -55,27 +52,17 @@ func NewTokenPool(tokens []string, opts ...Option) *TokenPool {
 	return tp
 }
 
-func (tp *TokenPool) Update(token string, remaining int, resetAt string) error {
+func (tp *TokenPool) Update(token string, remaining int, resetAt time.Time) {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
 	for _, t := range tp.tokens {
 		if t.token == token {
 			t.remaining = remaining
-			if strings.TrimSpace(resetAt) != "" {
-				resetUnix, err := strconv.ParseInt(resetAt, 10, 64)
-				if err != nil {
-					return fmt.Errorf("[github] failed to parse reset at string: %s, error: %v", resetAt, err)
-				}
-
-				t.resetAt = time.Unix(resetUnix, 0)
-			}
-
-			return nil
+			t.resetAt = resetAt
+			return
 		}
 	}
-
-	return nil
 }
 
 func (tp *TokenPool) GetToken() (string, error) {
@@ -107,12 +94,11 @@ func (tp *TokenPool) EarliestReset() time.Time {
 	return earliest
 }
 
-func (tp *TokenPool) ToString() {
-	group := slog.Group("token_availability")
-	slog.Debug("GitHub tokens availability", group)
+func (tp *TokenPool) Debug() {
+	group := slog.Group("github_tokens")
 
 	for index, token := range tp.tokens {
-		slog.Debug("token",
+		slog.Debug("github tokens availability",
 			slog.Int("index", index),
 			slog.Int("remaining", token.remaining),
 			slog.String("resetAt", token.resetAt.Format(time.DateTime)),

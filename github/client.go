@@ -143,6 +143,38 @@ func NewClient(tokenPool *TokenPool) *Client {
 	}
 }
 
+func syncRateLimitData(token string, tokenPool *TokenPool, res *http.Response) error {
+	remainingStr := res.Header.Get("X-Ratelimit-Remaining")
+	resetAtStr := res.Header.Get("X-Ratelimit-Reset")
+
+	if strings.TrimSpace(remainingStr) == "" {
+		return errors.New("[github] X-Ratelimit-Remaining header is empty")
+	}
+
+	if strings.TrimSpace(resetAtStr) == "" {
+		return errors.New("[github] X-Ratelimit-Reset header is empty")
+	}
+
+	remaining, err := strconv.ParseInt(remainingStr, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse remaing to int, remaing: %s", remainingStr)
+	}
+
+	resetUnix, err := strconv.ParseInt(resetAtStr, 10, 64)
+	if err != nil {
+		return fmt.Errorf("[github] failed to parse reset at string: %s, error: %v", resetAtStr, err)
+	}
+
+	resetAt := time.Unix(resetUnix, 0)
+	tokenPool.Update(token, int(remaining), resetAt)
+
+	if remaining == 0 {
+		return ErrTooManyRequests
+	}
+
+	return nil
+}
+
 func fetch[T any](
 	ctx context.Context,
 	query string,
@@ -197,6 +229,12 @@ func fetch[T any](
 		}
 	}()
 
+	if strings.TrimSpace(token) != "" {
+		if err := syncRateLimitData(token, tokenPool, res); err != nil {
+			return nil, nil, fmt.Errorf("sync rate limit data error: %w", err)
+		}
+	}
+
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read response body, error: %v", err)
@@ -208,16 +246,6 @@ func fetch[T any](
 	}
 
 	slog.Debug("fetching repo monthly date", slog.String("repository", fmt.Sprintf("%s/%s", owner, repo)))
-
-	remainingStr := res.Header.Get("X-Ratelimit-Remaining")
-	remaining, err := strconv.ParseInt(remainingStr, 10, 64)
-
-	if err != nil {
-		return nil, nil, fmt.Errorf("[github graphql] failed to parse X-Ratelimit-Remaining to int")
-	}
-
-	resetAt := res.Header.Get("X-Ratelimit-Reset")
-	tokenPool.Update(token, int(remaining), resetAt)
 
 	return extractEdges(body)
 }
@@ -551,6 +579,12 @@ func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (mode
 		}
 	}()
 
+	if strings.TrimSpace(token) != "" {
+		if err := syncRateLimitData(token, ghClient.TokenPool, res); err != nil {
+			return developer, fmt.Errorf("[github get developer] sync rate limit data error: %w", err)
+		}
+	}
+
 	body, err := io.ReadAll(res.Body)
 
 	if err != nil {
@@ -562,16 +596,6 @@ func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (mode
 	if err != nil {
 		return developer, fmt.Errorf("failed to decode developer body err: %v, received: %s, status code: %s", err, string(body), res.Status)
 	}
-
-	remainingStr := res.Header.Get("X-Ratelimit-Remaining")
-	remaining, err := strconv.ParseInt(remainingStr, 10, 64)
-
-	if err != nil {
-		return developer, fmt.Errorf("[github graphql] failed to parse X-Ratelimit-Remaining to int")
-	}
-
-	resetAt := res.Header.Get("X-Ratelimit-Reset")
-	ghClient.TokenPool.Update(token, int(remaining), resetAt)
 
 	return developer, checkGitHubResponse(res, body, "developer")
 }
@@ -612,6 +636,12 @@ func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (mod
 		}
 	}()
 
+	if strings.TrimSpace(token) != "" {
+		if err := syncRateLimitData(token, ghClient.TokenPool, res); err != nil {
+			return ghRepository, fmt.Errorf("[github get repository] sync rate limit data error: %w", err)
+		}
+	}
+
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return ghRepository, fmt.Errorf("failed to read response body: %v", err)
@@ -621,16 +651,6 @@ func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (mod
 	if err != nil {
 		return ghRepository, fmt.Errorf("failed to decode repository body: %v", err)
 	}
-
-	remainingStr := res.Header.Get("X-Ratelimit-Remaining")
-	remaining, err := strconv.ParseInt(remainingStr, 10, 64)
-
-	if err != nil {
-		return ghRepository, fmt.Errorf("[github graphql] failed to parse X-Ratelimit-Remaining to int")
-	}
-
-	resetAt := res.Header.Get("X-Ratelimit-Reset")
-	ghClient.TokenPool.Update(token, int(remaining), resetAt)
 
 	return ghRepository, checkGitHubResponse(res, body, "repository")
 }

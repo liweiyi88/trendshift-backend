@@ -57,17 +57,24 @@ var ingestMonthlyRepositoryDataCmd = &cobra.Command{
 
 		for {
 			done, err := ingestor.Ingest(ctx, int(now.Month()), now.Year())
-			if errors.Is(err, github.ErrTokenNotAvailable) {
-				earliestResetAt := tokenPool.EarliestReset()
 
-				slog.Warn("no GitHub tokens available, sleeping until earliest reset", slog.Time("reset_at", earliestResetAt))
-				sleepDuration := time.Until(earliestResetAt)
-				if sleepDuration > 0 {
-					slog.Info("sleeping until tokens reset", slog.Duration("sleep", sleepDuration))
+			if err != nil {
+				if errors.Is(err, github.ErrTokenNotAvailable) {
+					earliestResetAt := tokenPool.EarliestReset()
 
-					if err := datetime.SleepWithContext(ctx, sleepDuration); err != nil {
-						return err
+					slog.Warn("no GitHub tokens available, sleeping until earliest reset", slog.Time("reset_at", earliestResetAt))
+					sleepDuration := time.Until(earliestResetAt)
+					if sleepDuration > 0 {
+						slog.Info("sleeping until tokens reset", slog.Duration("sleep", sleepDuration))
+						if err := datetime.SleepWithContext(ctx, sleepDuration); err != nil {
+							return err
+						}
 					}
+				} else if errors.Is(err, github.ErrTooManyRequests) {
+					slog.Warn("fetching repository monthly data with a github token was throttled.")
+				} else {
+					// Unhandled error, return and let command failed
+					return err
 				}
 			}
 
@@ -76,15 +83,10 @@ var ingestMonthlyRepositoryDataCmd = &cobra.Command{
 				if sleepDuration > 0 {
 					slog.Info("Fetch jobs have been done, sleeping until start of tomorrow", slog.Duration("sleep", sleepDuration))
 					if err := datetime.SleepWithContext(ctx, sleepDuration); err != nil {
-						// Graceful shutdown will cancell the context, lets just return the ctx error.
+						// Graceful shutdown will cancel the context, lets just return the ctx error.
 						return err
 					}
 				}
-			}
-
-			// Unhandled error, return and let command failed
-			if err != nil {
-				return err
 			}
 		}
 	},

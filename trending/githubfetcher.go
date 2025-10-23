@@ -144,8 +144,6 @@ func (fetcher *GithubFetcher) FetchRepositories(ctx context.Context) error {
 	repositoriesNotExist := make([]model.GhRepository, 0)
 
 	for _, repo := range repoNamesNotExist {
-		repo := repo
-
 		group.Go(func() error {
 			repository, err := fetcher.gh.GetRepository(ctx, repo)
 

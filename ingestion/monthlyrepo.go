@@ -115,14 +115,13 @@ func (ingestor *MonthlyRepoDataIngestor) ingest(ctx context.Context, start, end 
 
 func (ingestor *MonthlyRepoDataIngestor) Ingest(ctx context.Context, month, year int) (bool, error) {
 	_, err := ingestor.rmr.CreateMonthlyInsightsIfNotExist(ctx, month, year)
-
 	if err != nil {
 		return false, fmt.Errorf("failed to create monthly insights if not exist, error: %w", err)
 	}
 
 	montlyRepoInsights, err := ingestor.rmr.FindIncompletedLastIngestedBefore(ctx, datetime.StartOfToday(), batchSize)
 	if err != nil {
-		return false, fmt.Errorf("failed to ingest repository monthly data, error: %w", err)
+		return false, fmt.Errorf("failed to find incompleted repository monthly data, error: %w", err)
 	}
 
 	if len(montlyRepoInsights) == 0 {
@@ -133,7 +132,6 @@ func (ingestor *MonthlyRepoDataIngestor) Ingest(ctx context.Context, month, year
 	end := datetime.EndOfMonth(start)
 
 	chunks := slices.Chunk(montlyRepoInsights, 10)
-
 	for chunk := range chunks {
 		g, gctx := errgroup.WithContext(ctx)
 		for _, insight := range chunk {
@@ -146,7 +144,7 @@ func (ingestor *MonthlyRepoDataIngestor) Ingest(ctx context.Context, month, year
 			return false, err
 		}
 
-		ingestor.gh.TokenPool.ToString()
+		ingestor.gh.TokenPool.Debug()
 	}
 
 	return false, nil
@@ -164,7 +162,6 @@ func fetchPaginated[T any](
 	}
 
 	owner, repo := parts[0], parts[1]
-
 	var cursor *string
 	var all []T
 
@@ -187,6 +184,10 @@ func fetchPaginated[T any](
 
 func (ingestor *MonthlyRepoDataIngestor) fetchIssues(ctx context.Context, repository string, start, end time.Time) (int, int, error) {
 	data, err := fetchPaginated(ctx, repository, start, end, ingestor.gh.GetIssues)
+	if err != nil {
+		return 0, 0, err
+	}
+
 	closed := 0
 
 	for _, v := range data {

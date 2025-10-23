@@ -32,7 +32,8 @@ func Init() {
 	godotenv.Load(".env")
 
 	DatabaseDSN = os.Getenv("DATABASE_DSN")
-	githubTokens = os.Getenv("GITHUB_TOKEN")
+	githubTokens = os.Getenv("GITHUB_TOKENS")
+
 	GitHubTokens = strings.Split(githubTokens, ",")
 
 	GinMode = os.Getenv("GIN_MODE")
