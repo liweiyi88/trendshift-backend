@@ -2,7 +2,6 @@ package githubcmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
@@ -123,8 +122,6 @@ func parseEndDateTimeOption(end string) (string, error) {
 			return end, nil
 		case "h":
 			endTime := now.Add(time.Duration(number) * time.Hour)
-
-			fmt.Println("end time", endTime.Format(time.DateTime))
 			end = endTime.Format(time.DateTime)
 			return end, nil
 		}

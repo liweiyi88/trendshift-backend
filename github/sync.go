@@ -61,6 +61,7 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 			repository.Language = ghRepository.Language // Language can also be updated
 			repository.DefaultBranch = ghRepository.DefaultBranch
 			repository.Homepage = ghRepository.Homepage
+			repository.CreatedAt = ghRepository.CreatedAt
 
 			return s.repositoryRepo.Update(ctx, repository)
 		})
@@ -109,6 +110,7 @@ func (s *SyncHandler) updateDevelopers(ctx context.Context, developers []model.D
 			developer.PublicGists = ghDeveloper.PublicGists
 			developer.Followers = ghDeveloper.Followers
 			developer.Following = ghDeveloper.Following
+			developer.CreatedAt = ghDeveloper.CreatedAt
 
 			return s.developerRepo.Update(ctx, developer)
 		})

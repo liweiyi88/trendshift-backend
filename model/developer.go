@@ -29,8 +29,8 @@ type Developer struct {
 	Following       int                `json:"following"`
 	Skipped         bool               `json:"skipped"`
 	Trendings       []Trending         `json:"trendings"`
-	CreatedAt       time.Time          `json:"created_at"`
-	UpdatedAt       time.Time          `json:"updated_at"`
+	CreatedAt       time.Time          `json:"created_at"` // It is the datetime the developer was created on GitHub.
+	UpdatedAt       time.Time          `json:"updated_at"` // It is the datetime we update the DB record, not when developer info updated on GitHub
 }
 
 type TrendingDeveloperResponse struct {
@@ -260,7 +260,7 @@ func (dr *DeveloperRepo) FindTrendingDevelopers(ctx context.Context, opts ...any
 }
 
 func (dr *DeveloperRepo) Update(ctx context.Context, developer Developer) error {
-	query := "UPDATE `developers` SET avatar_url = ?, name = ?, company = ?, blog = ?, location = ?, email = ?, bio = ?, twitter_username = ?, public_repos = ?, public_gists = ?, followers = ?, following = ?, skipped = ?, updated_at = ? WHERE id = ?"
+	query := "UPDATE `developers` SET avatar_url = ?, name = ?, company = ?, blog = ?, location = ?, email = ?, bio = ?, twitter_username = ?, public_repos = ?, public_gists = ?, followers = ?, following = ?, skipped = ?, created_at = ?, updated_at = ? WHERE id = ?"
 
 	updatedAt := time.Now()
 
@@ -279,6 +279,7 @@ func (dr *DeveloperRepo) Update(ctx context.Context, developer Developer) error 
 		developer.Followers,
 		developer.Following,
 		developer.Skipped,
+		developer.CreatedAt.Format(time.DateTime),
 		updatedAt.Format(time.DateTime),
 		developer.Id)
 
@@ -304,7 +305,8 @@ func (dr *DeveloperRepo) Save(ctx context.Context, developer Developer) (int64, 
 
 	var lastInsertId int64
 
-	createdAt, updatedAt := time.Now(), time.Now()
+	// createdAt is the datetime when the developer was created on GitHub
+	createdAt, updatedAt := developer.CreatedAt, time.Now()
 
 	result, err := dr.db.ExecContext(ctx, query,
 		developer.GhId,

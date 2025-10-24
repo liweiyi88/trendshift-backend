@@ -146,6 +146,11 @@ func NewClient(tokenPool *TokenPool) *Client {
 func syncRateLimitData(token string, tokenPool *TokenPool, res *http.Response) error {
 	remainingStr := res.Header.Get("X-Ratelimit-Remaining")
 	resetAtStr := res.Header.Get("X-Ratelimit-Reset")
+	retryAfter := res.Header.Get("retry-after")
+
+	if strings.TrimSpace(retryAfter) != "" {
+		slog.Warn("[github] secondary rate limit reached", slog.String("retry-after", retryAfter))
+	}
 
 	if strings.TrimSpace(remainingStr) == "" {
 		return errors.New("[github] X-Ratelimit-Remaining header is empty")
