@@ -101,7 +101,6 @@ func save(scraper Scraper, ctx context.Context) error {
 	slog.Info(fmt.Sprintf("Scraping %s for languages: %s...", scraper.GetType(), strings.Join(config.LanguageToScrape, ",")))
 
 	for _, language := range config.LanguageToScrape {
-		language := language
 		group.Go(func() error {
 			return scraper.Scrape(groupCtx, language)
 		})

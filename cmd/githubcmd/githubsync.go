@@ -1,8 +1,7 @@
-package cmd
+package githubcmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
@@ -28,14 +27,12 @@ var limit int
 // If run as cronjob, a suggested command to avoid sending too many requests to GitHub is
 // `sync [repository|developer] --end=-2d --limit=500` and run it hourly.
 func init() {
-	rootCmd.AddCommand(gihtubSyncCmd)
-
-	gihtubSyncCmd.Flags().StringVarP(&start, "start", "s", "", "--start \"2023-01-06 14:35:00\" ")
-	gihtubSyncCmd.Flags().StringVarP(&end, "end", "e", "", "--end \"2023-10-06 14:35:00\", --end=-2d or --end=2h, `d` for days, `h` for hours ")
-	gihtubSyncCmd.Flags().IntVarP(&limit, "limit", "l", 0, "--limit=100")
+	GitHubSyncCmd.Flags().StringVarP(&start, "start", "s", "", "--start \"2023-01-06 14:35:00\" ")
+	GitHubSyncCmd.Flags().StringVarP(&end, "end", "e", "", "--end \"2023-10-06 14:35:00\", --end=-2d or --end=2h, `d` for days, `h` for hours ")
+	GitHubSyncCmd.Flags().IntVarP(&limit, "limit", "l", 0, "--limit=100")
 }
 
-var gihtubSyncCmd = &cobra.Command{
+var GitHubSyncCmd = &cobra.Command{
 	Use:   "sync [repository|developer]",
 	Short: "Sync the latest repositories or developers details from GitHub",
 	Args:  cobra.ExactArgs(1),
@@ -45,7 +42,8 @@ var gihtubSyncCmd = &cobra.Command{
 		action := args[0]
 		ctx, stop := context.WithCancel(context.Background())
 		db := database.GetInstance(ctx)
-		gh := github.NewClient(config.GitHubToken)
+		tokenPool := github.NewTokenPool(config.GitHubTokens)
+		gh := github.NewClient(tokenPool)
 
 		defer func() {
 			err := db.Close()
@@ -85,7 +83,7 @@ var gihtubSyncCmd = &cobra.Command{
 
 		repositoryRepo := model.NewGhRepositoryRepo(db)
 		developerRepo := model.NewDeveloperRepo(db)
-		handler := github.NewSyncHandler(db, repositoryRepo, developerRepo, gh)
+		handler := github.NewSyncHandler(repositoryRepo, developerRepo, gh)
 		err = handler.Handle(ctx, action, opt.Start(start), opt.End(endDateTime), opt.Limit(limit))
 
 		if err != nil {
@@ -117,14 +115,13 @@ func parseEndDateTimeOption(end string) (string, error) {
 	if err == nil && unit != "" {
 		now := time.Now()
 
-		if unit == "d" {
+		switch unit {
+		case "d":
 			endTime := now.Add(time.Duration(number) * 24 * time.Hour)
 			end = endTime.Format(time.DateTime)
 			return end, nil
-		} else if unit == "h" {
+		case "h":
 			endTime := now.Add(time.Duration(number) * time.Hour)
-
-			fmt.Println("end time", endTime.Format(time.DateTime))
 			end = endTime.Format(time.DateTime)
 			return end, nil
 		}

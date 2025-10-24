@@ -1,4 +1,4 @@
-package cmd
+package githubcmd
 
 import (
 	"testing"

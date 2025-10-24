@@ -45,9 +45,10 @@ func (s *Algoliasearch) Search(query string, opts ...any) (SearchResults, error)
 	}
 
 	for _, result := range res.Results {
-		if result.Index == repositoryIndex {
+		switch result.Index {
+		case repositoryIndex:
 			searchResults.Repositories = append(searchResults.Repositories, result.Hits...)
-		} else if result.Index == developerIndex {
+		case developerIndex:
 			searchResults.Developers = append(searchResults.Developers, result.Hits...)
 		}
 	}
@@ -71,7 +72,7 @@ func (s *Algoliasearch) UpsertDevelopers(developers ...model.Developer) error {
 		_, err := s.client.InitIndex(developerIndex).SaveObjects(documents)
 
 		if err != nil {
-			return fmt.Errorf("failed to save developer obejcts to algolia search: %v", err)
+			return fmt.Errorf("failed to save developer objects to algolia search: %v", err)
 		}
 	}
 
@@ -94,7 +95,7 @@ func (s *Algoliasearch) UpsertRepositories(repositories ...model.GhRepository) e
 		_, err := s.client.InitIndex(repositoryIndex).SaveObjects(documents)
 
 		if err != nil {
-			return fmt.Errorf("failed to save repositoriy obejcts to algolia search: %v", err)
+			return fmt.Errorf("failed to save repository objects to algolia search: %v", err)
 		}
 	}
 
@@ -105,7 +106,7 @@ func (s *Algoliasearch) DeleteAll() error {
 	_, err := s.client.InitIndex(repositoryIndex).ClearObjects()
 
 	if err != nil {
-		return fmt.Errorf("failed to clear repository obejcts in algolia search: %v", err)
+		return fmt.Errorf("failed to clear repository objects in algolia search: %v", err)
 	}
 
 	_, err = s.client.InitIndex(developerIndex).ClearObjects()

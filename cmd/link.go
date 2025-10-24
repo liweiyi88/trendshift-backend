@@ -25,7 +25,7 @@ func init() {
 
 var linkCmd = &cobra.Command{
 	Use:   "link [repository|developer]",
-	Short: "Link trending repositories or developers with from GitHub repositories or developers",
+	Short: "Link trending repositories or developers with GitHub repositories or developers",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Init()
@@ -33,7 +33,9 @@ var linkCmd = &cobra.Command{
 		action := args[0]
 		ctx, stop := context.WithCancel(context.Background())
 		db := database.GetInstance(ctx)
-		gh := github.NewClient(config.GitHubToken)
+
+		tokenPool := github.NewTokenPool(config.GitHubTokens)
+		gh := github.NewClient(tokenPool)
 
 		defer func() {
 			err := db.Close()
@@ -55,7 +57,7 @@ var linkCmd = &cobra.Command{
 			stop()
 		}()
 
-		slog.Info("linking repositories...")
+		slog.Info("linking...")
 
 		repositories := global.InitRepositories(db)
 		search := search.NewSearch()
@@ -63,11 +65,12 @@ var linkCmd = &cobra.Command{
 
 		var err error
 
-		if action == "repository" {
+		switch action {
+		case "repository":
 			err = githubFetcher.FetchRepositories(ctx)
-		} else if action == "developer" {
+		case "developer":
 			err = githubFetcher.FetchDevelopers(ctx)
-		} else {
+		default:
 			slog.Error("invalid action, expected repository or developer")
 			return
 		}

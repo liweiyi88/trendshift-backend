@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/liweiyi88/trendshift-backend/database"
 	"github.com/liweiyi88/trendshift-backend/model"
 	"github.com/liweiyi88/trendshift-backend/utils/sliceutils"
 	"golang.org/x/sync/errgroup"
@@ -16,15 +15,14 @@ import (
 const chulkSize = 200
 
 type SyncHandler struct {
-	db             database.DB
 	repositoryRepo *model.GhRepositoryRepo
 	developerRepo  *model.DeveloperRepo
 	client         *Client
 }
 
-func NewSyncHandler(db database.DB, repositoryRepo *model.GhRepositoryRepo, developerRepo *model.DeveloperRepo, client *Client) *SyncHandler {
+func NewSyncHandler(repositoryRepo *model.GhRepositoryRepo, developerRepo *model.DeveloperRepo, client *Client) *SyncHandler {
 	return &SyncHandler{
-		db, repositoryRepo, developerRepo, client,
+		repositoryRepo, developerRepo, client,
 	}
 }
 
@@ -45,15 +43,15 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 			ghRepository, err := s.client.GetRepository(ctx, repository.FullName)
 
 			if err != nil {
-				if errors.Is(err, ErrNotFound) {
-					slog.Info(fmt.Sprintf("repository not found on GitHub, repository: %s", repository.FullName))
-				} else if errors.Is(err, ErrAccessBlocked) {
-					slog.Info(fmt.Sprintf("repository access blocked, repository: %s", repository.FullName))
-				} else {
-					return fmt.Errorf("failed to get repository details from GitHub: %v", err)
+				if errors.Is(err, ErrNotFound) || errors.Is(err, ErrAccessBlocked) {
+					slog.Info("repository not found or access blocked, mark it as skipped", slog.String("repository", repository.FullName))
+					repository.Skipped = true
+					return s.repositoryRepo.Update(ctx, repository)
 				}
+				return fmt.Errorf("failed to get repository details from GitHub: %v", err)
 			}
 
+			repository.Skipped = false
 			repository.Description = ghRepository.Description
 			repository.Forks = ghRepository.Forks
 			repository.Stars = ghRepository.Stars
@@ -61,6 +59,7 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 			repository.Language = ghRepository.Language // Language can also be updated
 			repository.DefaultBranch = ghRepository.DefaultBranch
 			repository.Homepage = ghRepository.Homepage
+			repository.CreatedAt = ghRepository.CreatedAt
 
 			return s.repositoryRepo.Update(ctx, repository)
 		})
@@ -86,15 +85,15 @@ func (s *SyncHandler) updateDevelopers(ctx context.Context, developers []model.D
 			ghDeveloper, err := s.client.GetDeveloper(ctx, developer.Username)
 
 			if err != nil {
-				if errors.Is(err, ErrNotFound) {
-					slog.Info(fmt.Sprintf("not found on GitHub, developer: %s", developer.Username))
-				} else if errors.Is(err, ErrAccessBlocked) {
-					slog.Info(fmt.Sprintf("developer access blocked due to leagl reason, developer: %s", developer.Username))
-				} else {
-					return fmt.Errorf("failed to get developer details from GitHub: %v", err)
+				if errors.Is(err, ErrNotFound) || errors.Is(err, ErrAccessBlocked) {
+					slog.Info("developer not found or access blocked, mark it as skipped", slog.String("developer", developer.Username))
+					developer.Skipped = true
+					return s.developerRepo.Update(ctx, developer)
 				}
+				return fmt.Errorf("failed to get developer details from GitHub: %v", err)
 			}
 
+			developer.Skipped = false
 			developer.AvatarUrl = ghDeveloper.AvatarUrl
 			developer.Name = ghDeveloper.Name
 			developer.Company = ghDeveloper.Company
@@ -107,6 +106,7 @@ func (s *SyncHandler) updateDevelopers(ctx context.Context, developers []model.D
 			developer.PublicGists = ghDeveloper.PublicGists
 			developer.Followers = ghDeveloper.Followers
 			developer.Following = ghDeveloper.Following
+			developer.CreatedAt = ghDeveloper.CreatedAt
 
 			return s.developerRepo.Update(ctx, developer)
 		})
@@ -125,7 +125,7 @@ func (s *SyncHandler) syncRepositories(ctx context.Context, opts ...any) error {
 		return fmt.Errorf("failed to find repositories: %v", err)
 	}
 
-	chulks := sliceutils.Chunk[model.GhRepository](repositories, chulkSize)
+	chulks := sliceutils.Chunk(repositories, chulkSize)
 
 	for _, chulk := range chulks {
 		err := s.updateRepositories(ctx, chulk)
@@ -148,7 +148,7 @@ func (s *SyncHandler) syncDevelopers(ctx context.Context, opts ...any) error {
 		return fmt.Errorf("failed to find developers: %v", err)
 	}
 
-	chulks := sliceutils.Chunk[model.Developer](developers, chulkSize)
+	chulks := sliceutils.Chunk(developers, chulkSize)
 
 	for _, chulk := range chulks {
 		err := s.updateDevelopers(ctx, chulk)
