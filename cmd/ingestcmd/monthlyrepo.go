@@ -14,6 +14,7 @@ import (
 	"github.com/liweiyi88/trendshift-backend/database"
 	"github.com/liweiyi88/trendshift-backend/github"
 	"github.com/liweiyi88/trendshift-backend/ingestion"
+	"github.com/liweiyi88/trendshift-backend/logger"
 	"github.com/liweiyi88/trendshift-backend/model"
 	"github.com/liweiyi88/trendshift-backend/utils/datetime"
 	"github.com/spf13/cobra"
@@ -30,6 +31,7 @@ var ingestMonthlyRepositoryDataCmd = &cobra.Command{
 	Short: "Fetch, aggregate, and save monthly GitHub repo data",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config.Init()
+		logger.InitSlog(verbose)
 
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		db := database.GetInstance(ctx)
@@ -47,15 +49,11 @@ var ingestMonthlyRepositoryDataCmd = &cobra.Command{
 		tokenPool := github.NewTokenPool(config.GitHubTokens)
 		gh := github.NewClient(tokenPool)
 
-		if verbose {
-			slog.SetLogLoggerLevel(slog.LevelDebug)
-		}
-
 		rmr := model.NewRepositoryMonthlyInsightRepo(db)
 		ingestor := ingestion.NewMonthlyRepoDataIngestor(rmr, gh)
-		now := time.Now()
 
 		for {
+			now := time.Now()
 			done, err := ingestor.Ingest(ctx, int(now.Month()), now.Year())
 
 			if err != nil {

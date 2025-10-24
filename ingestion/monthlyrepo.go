@@ -93,6 +93,8 @@ func (ingestor *MonthlyRepoDataIngestor) ingest(ctx context.Context, start, end 
 	insight.LastIngestedAt = dbutils.NewNullTime(now)
 
 	slog.Debug("completed fetching repo monthly data",
+		slog.String("start", start.Format(time.DateTime)),
+		slog.String("end", end.Format(time.DateTime)),
 		slog.String("repository", repoName),
 		slog.Int("stars", stars),
 		slog.Int("forks", forks),
@@ -118,14 +120,13 @@ func (ingestor *MonthlyRepoDataIngestor) Ingest(ctx context.Context, month, year
 		return true, nil
 	}
 
-	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
-	end := datetime.EndOfMonth(start)
-
 	chunks := slices.Chunk(montlyRepoInsights, 10)
 	for chunk := range chunks {
 		g, gctx := errgroup.WithContext(ctx)
 		for _, insight := range chunk {
 			g.Go(func() error {
+				start := time.Date(insight.Year, time.Month(insight.Month), 1, 0, 0, 0, 0, time.Local)
+				end := datetime.EndOfMonth(start)
 				return ingestor.ingest(gctx, start, end, insight)
 			})
 		}

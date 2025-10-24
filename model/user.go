@@ -45,7 +45,7 @@ func NewUserRepo(db database.DB) *UserRepo {
 }
 
 func (ur *UserRepo) FindByName(ctx context.Context, username string) (User, error) {
-	query := "SELECT * FROM users WHERE username = ?"
+	query := "SELECT id, username, password, role, created_at, updated_at FROM users WHERE username = ?"
 
 	var user User
 
@@ -90,10 +90,14 @@ func (ur *UserRepo) Save(ctx context.Context, user User) (int, error) {
 		return int(lastInsertId), fmt.Errorf("failed to get users last insert id after insert, error: %v", err)
 	}
 
-	_, err = result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
 
 	if err != nil {
 		return int(lastInsertId), fmt.Errorf("user insert rows affected returns error: %v", err)
+	}
+
+	if rowsAffected != 1 {
+		return int(lastInsertId), fmt.Errorf("[user] expected 1 row affected, got %d", rowsAffected)
 	}
 
 	return int(lastInsertId), nil

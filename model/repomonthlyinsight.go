@@ -131,7 +131,7 @@ func (rr *RepositoryMonthlyInsightRepo) Update(ctx context.Context, data Reposit
 }
 
 func (rr *RepositoryMonthlyInsightRepo) FindIncompletedLastIngestedBefore(ctx context.Context, before time.Time, limit int) ([]RepositoryMonthlyInsightWithName, error) {
-	query := "select ri.*, repositories.full_name from repository_monthly_insights as ri JOIN repositories ON ri.repository_id = repositories.id where ri.completed_at is null AND repositories.skipped = false AND (ri.last_ingested_at is null OR ri.last_ingested_at < ?) order by ri.last_ingested_at ASC limit ?"
+	query := "select ri.*, repositories.full_name from repository_monthly_insights as ri JOIN repositories ON ri.repository_id = repositories.id where ri.completed_at is null AND repositories.skipped = false AND (ri.last_ingested_at is null OR ri.last_ingested_at < ?) order by ri.month ASC, ri.last_ingested_at ASC limit ?"
 	args := []any{before.Format(time.DateTime), limit}
 
 	rows, err := rr.db.QueryContext(ctx, query, args...)

@@ -280,8 +280,9 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 		}
 
 		if !collectionMap.Has(ghr.Id) {
-			ghr.Tags = make([]Tag, 0)
-			collectionMap.Set(ghr.Id, &ghr)
+			copy := ghr
+			copy.Tags = make([]Tag, 0)
+			collectionMap.Set(ghr.Id, &copy)
 		}
 
 		if tagId.Valid && tagName.Valid {

@@ -21,7 +21,7 @@ var username, password, role string
 func init() {
 	UserCmd.Flags().StringVarP(&username, "username", "u", "", "username")
 	UserCmd.Flags().StringVarP(&password, "password", "p", "", "password")
-	UserCmd.Flags().StringVarP(&role, "role", "r", "user", "password")
+	UserCmd.Flags().StringVarP(&role, "role", "r", "user", "role")
 
 	UserCmd.MarkFlagRequired("username")
 	UserCmd.MarkFlagRequired("password")

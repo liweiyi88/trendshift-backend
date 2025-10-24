@@ -25,7 +25,7 @@ func init() {
 
 var linkCmd = &cobra.Command{
 	Use:   "link [repository|developer]",
-	Short: "Link trending repositories or developers with from GitHub repositories or developers",
+	Short: "Link trending repositories or developers with GitHub repositories or developers",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		config.Init()
@@ -57,7 +57,7 @@ var linkCmd = &cobra.Command{
 			stop()
 		}()
 
-		slog.Info("linking repositories...")
+		slog.Info("linking...")
 
 		repositories := global.InitRepositories(db)
 		search := search.NewSearch()

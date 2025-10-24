@@ -3,6 +3,7 @@ package github
 import (
 	"errors"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 )
@@ -42,8 +43,14 @@ func NewTokenPool(tokens []string, opts ...Option) *TokenPool {
 	}
 
 	for _, t := range tokens {
+		tt := strings.TrimSpace(t)
+
+		if tt == "" {
+			continue
+		}
+
 		tp.tokens = append(tp.tokens, &token{
-			token:     t,
+			token:     tt,
 			remaining: 5000,
 			resetAt:   time.Now(),
 		})
@@ -69,10 +76,14 @@ func (tp *TokenPool) GetToken() (string, error) {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
-	for i, token := range tp.tokens {
-		if token.isAvailable() {
-			tp.index = i
-			return token.token, nil
+	n := len(tp.tokens)
+
+	if n > 0 {
+		for i, token := range tp.tokens {
+			if token.isAvailable() {
+				tp.index = i
+				return token.token, nil
+			}
 		}
 	}
 
@@ -84,6 +95,9 @@ func (tp *TokenPool) GetToken() (string, error) {
 }
 
 func (tp *TokenPool) EarliestReset() time.Time {
+	tp.mu.Lock()
+	defer tp.mu.Unlock()
+
 	var earliest time.Time
 	for _, t := range tp.tokens {
 		if earliest.IsZero() || t.resetAt.Before(earliest) {
@@ -95,6 +109,9 @@ func (tp *TokenPool) EarliestReset() time.Time {
 }
 
 func (tp *TokenPool) Debug() {
+	tp.mu.Lock()
+	defer tp.mu.Unlock()
+
 	group := slog.Group("github_tokens")
 
 	for index, token := range tp.tokens {

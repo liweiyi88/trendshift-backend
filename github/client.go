@@ -301,7 +301,8 @@ query ($owner: String!, $repo: String!, $after: String) {
 			}
 
 			if end != nil && createdAt.After(*end) {
-				return forks, nil, nil
+				// If handle past months we shall let it continue
+				continue
 			}
 
 			fork := Fork{
@@ -389,7 +390,8 @@ query ($owner: String!, $repo: String!, $after: String) {
 			}
 
 			if end != nil && updatedAt.After(*end) {
-				return issues, nil, nil
+				// If handle past months we shall let it continue
+				continue
 			}
 
 			issue := Issue{
@@ -460,7 +462,8 @@ query ($owner: String!, $repo: String!, $after: String) {
 			}
 
 			if end != nil && mergedAt.After(*end) {
-				return prs, nil, nil
+				// If handle past months we shall let it continue
+				continue
 			}
 
 			pr := Pr{
@@ -526,7 +529,8 @@ query ($owner: String!, $repo: String!, $after: String) {
 			}
 
 			if end != nil && starredAt.After(*end) {
-				return stars, nil, nil
+				// If handle past months we shall let it continue
+				continue
 			}
 
 			stargazer := Stargazer{
@@ -578,8 +582,7 @@ func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (mode
 	}
 
 	defer func() {
-		err := res.Body.Close()
-		if err != nil {
+		if err := res.Body.Close(); err != nil {
 			slog.Any("failed to close response body when fetch developer:", err)
 		}
 	}()
@@ -635,8 +638,7 @@ func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (mod
 	}
 
 	defer func() {
-		err := res.Body.Close()
-		if err != nil {
+		if err := res.Body.Close(); err != nil {
 			slog.Any("failed to close response body when fetch repository:", err)
 		}
 	}()
