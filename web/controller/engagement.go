@@ -21,12 +21,12 @@ func NewRepositoryEngagementController(rmr *model.RepositoryMonthlyInsightRepo) 
 	}
 }
 
-// Valid query parameter example: ?year=2024&month=1&language=PHP&createdAt=2026-01-02T15:04:05+10:00
+// Valid query parameter example: ?year=2024&month=1&language=PHP&createdAfter=2024-01-02T15:04:05+10:00
 func (controller *RepositoryEngagementController) List(c *gin.Context) {
 	defaultYear, defaultMonth := strconv.Itoa(datetime.StartOfThisMonth().Year()), datetime.StartOfThisMonth().Month().String()
 
-	year := c.DefaultQuery("year", defaultYear)
-	month := c.DefaultQuery("month", defaultMonth)
+	yearStr := c.DefaultQuery("year", defaultYear)
+	monthStr := c.DefaultQuery("month", defaultMonth)
 	language := c.DefaultQuery("language", "")
 	createdAfterStr := c.DefaultQuery("createdAfter", "")
 	limitStr := c.DefaultQuery("limit", "10")
@@ -40,9 +40,24 @@ func (controller *RepositoryEngagementController) List(c *gin.Context) {
 	var createdAfter time.Time
 	if createdAfterStr != "" {
 		parsedTime, err := time.Parse(time.RFC3339, createdAfterStr)
-		if err == nil {
-			createdAfter = parsedTime
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request, invalid createdAfter format (expected RFC3339)"})
+			return
 		}
+
+		createdAfter = parsedTime
+	}
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request, invalid year"})
+		return
+	}
+
+	month, err := strconv.Atoi(monthStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request, invalid month"})
+		return
 	}
 
 	params := model.ListEngagementParams{
@@ -63,7 +78,7 @@ func (controller *RepositoryEngagementController) List(c *gin.Context) {
 	data, err := controller.rmr.FindRepositoryMonthlyEngagements(c, params)
 	if err != nil {
 		slog.Error("failed to fetch engagements", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, nil)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 

@@ -54,8 +54,8 @@ type RepositoryMonthlyInsightWithName struct {
 
 type ListEngagementParams struct {
 	Metric       string
-	Year         string
-	Month        string
+	Year         int
+	Month        int
 	Language     string
 	Limit        int
 	CreatedAfter time.Time
@@ -69,7 +69,7 @@ func (params ListEngagementParams) Validate() error {
 		}
 	}
 
-	return fmt.Errorf("invalid metric, expected: stars, merged_prs, issues or closed_issues, passed %s", params.Metric)
+	return fmt.Errorf("invalid metric, expected: stars, forks, merged_prs, issues or closed_issues, passed %s", params.Metric)
 }
 
 type RepositoryMonthlyInsightRepo struct {
@@ -171,16 +171,6 @@ func (rr *RepositoryMonthlyInsightRepo) Update(ctx context.Context, data Reposit
 	return nil
 }
 
-func IsValidEngagementMetric(metric string) bool {
-	valid := []string{"stars", "mergedPrs", "issues", "closedIssues"}
-	for _, v := range valid {
-		if v == metric {
-			return true
-		}
-	}
-	return false
-}
-
 func (rr *RepositoryMonthlyInsightRepo) FindRepositoryMonthlyEngagements(ctx context.Context, param ListEngagementParams) ([]RepositoryMonthlyEngagement, error) {
 	qb := sq.Select("ri.id, ri.year, ri.month, ri.stars, ri.forks, ri.merged_prs, ri.issues, ri.closed_issues, ri.completed_at, ri.last_ingested_at, ri.repository_id, repo.full_name as repository_name, repo.stars as repository_stars, repo.forks as repository_forks, repo.language as repository_language, repo.created_at as repository_created_at").
 		From("repository_monthly_insights as ri").
@@ -189,6 +179,14 @@ func (rr *RepositoryMonthlyInsightRepo) FindRepositoryMonthlyEngagements(ctx con
 
 	if !param.CreatedAfter.IsZero() {
 		qb = qb.Where("repo.created_at >= ?", param.CreatedAfter.Format(time.DateTime))
+	}
+
+	if param.Year > 0 && param.Month > 0 {
+		qb = qb.Where("year = ? AND month = ?", param.Year, param.Month)
+	} else {
+		now := time.Now()
+		thisYear, thisMonth := now.Year(), int(now.Month())
+		qb = qb.Where("year = ? AND month = ?", thisYear, thisMonth)
 	}
 
 	if param.Limit > 0 && param.Limit <= 10 {
