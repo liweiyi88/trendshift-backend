@@ -250,7 +250,7 @@ func fetch[T any](
 		return nil, nil, err
 	}
 
-	slog.Debug("fetching repo monthly date", slog.String("repository", fmt.Sprintf("%s/%s", owner, repo)))
+	slog.Debug("fetching repo monthly data", slog.String("repository", fmt.Sprintf("%s/%s", owner, repo)))
 
 	return extractEdges(body)
 }

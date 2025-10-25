@@ -3,6 +3,7 @@ module github.com/liweiyi88/trendshift-backend
 go 1.25.3
 
 require (
+	github.com/Masterminds/squirrel v1.5.4
 	github.com/algolia/algoliasearch-client-go/v3 v3.31.4
 	github.com/getsentry/sentry-go v0.36.0
 	github.com/getsentry/sentry-go/gin v0.36.0
@@ -35,6 +36,8 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
+	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
+	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
