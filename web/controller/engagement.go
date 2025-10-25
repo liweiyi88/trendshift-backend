@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/liweiyi88/trendshift-backend/model"
@@ -21,55 +20,18 @@ func NewRepositoryEngagementController(rmr *model.RepositoryMonthlyInsightRepo) 
 	}
 }
 
-// Valid query parameter example: ?year=2024&month=1&language=PHP&createdAfter=2024-01-02T15:04:05+10:00
+// Valid query parameter example: ?year=2025&month=10&language=Go&limit=10&created_after=2024-01-02T15:04:05+10:00
 func (controller *RepositoryEngagementController) List(c *gin.Context) {
 	defaultYear, defaultMonth := strconv.Itoa(datetime.StartOfThisMonth().Year()), datetime.StartOfThisMonth().Month().String()
 
 	yearStr := c.DefaultQuery("year", defaultYear)
 	monthStr := c.DefaultQuery("month", defaultMonth)
-	language := c.DefaultQuery("language", "")
-	createdAfterStr := c.DefaultQuery("createdAfter", "")
+	languageStr := c.DefaultQuery("language", "")
+	createdAfterStr := c.DefaultQuery("created_after", "")
 	limitStr := c.DefaultQuery("limit", "10")
 
-	limit, err := strconv.Atoi(limitStr)
+	params, err := model.NewListEngagementParams(c.Param("metric"), yearStr, monthStr, languageStr, limitStr, createdAfterStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request, invalid limit"})
-		return
-	}
-
-	var createdAfter time.Time
-	if createdAfterStr != "" {
-		parsedTime, err := time.Parse(time.RFC3339, createdAfterStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request, invalid createdAfter format (expected RFC3339)"})
-			return
-		}
-
-		createdAfter = parsedTime
-	}
-
-	year, err := strconv.Atoi(yearStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request, invalid year"})
-		return
-	}
-
-	month, err := strconv.Atoi(monthStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request, invalid month"})
-		return
-	}
-
-	params := model.ListEngagementParams{
-		Metric:       c.Param("metric"),
-		Year:         year,
-		Month:        month,
-		Language:     language,
-		Limit:        limit,
-		CreatedAfter: createdAfter,
-	}
-
-	if err := params.Validate(); err != nil {
 		slog.Error("params are not valid", slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request"})
 		return
@@ -77,7 +39,7 @@ func (controller *RepositoryEngagementController) List(c *gin.Context) {
 
 	data, err := controller.rmr.FindRepositoryMonthlyEngagements(c, params)
 	if err != nil {
-		slog.Error("failed to fetch engagements", slog.Any("error", err))
+		slog.Error("failed to fetch repository engagements", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}

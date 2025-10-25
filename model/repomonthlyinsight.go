@@ -2,8 +2,10 @@ package model
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -61,7 +63,49 @@ type ListEngagementParams struct {
 	CreatedAfter time.Time
 }
 
-func (params ListEngagementParams) Validate() error {
+func NewListEngagementParams(metricStr, yearStr, monthStr, languageStr, limitStr, createdAfterStr string) (*ListEngagementParams, error) {
+	params := &ListEngagementParams{
+		Metric:   metricStr,
+		Language: languageStr,
+	}
+
+	if err := params.ValidateMetric(); err != nil {
+		return nil, err
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		return nil, errors.New("invalid limit")
+	}
+
+	params.Limit = limit
+
+	if createdAfterStr != "" {
+		parsedTime, err := time.Parse(time.RFC3339, createdAfterStr)
+		if err != nil {
+			return nil, errors.New("invalid created_after")
+		}
+
+		params.CreatedAfter = parsedTime
+	}
+
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		return nil, errors.New("invalid year")
+	}
+
+	params.Year = year
+
+	month, err := strconv.Atoi(monthStr)
+	if err != nil {
+		return nil, errors.New("invalid month")
+	}
+
+	params.Month = month
+	return params, nil
+}
+
+func (params ListEngagementParams) ValidateMetric() error {
 	valid := []string{"stars", "forks", "merged_prs", "issues", "closed_issues"}
 	for _, v := range valid {
 		if v == params.Metric {
@@ -171,8 +215,8 @@ func (rr *RepositoryMonthlyInsightRepo) Update(ctx context.Context, data Reposit
 	return nil
 }
 
-func (rr *RepositoryMonthlyInsightRepo) FindRepositoryMonthlyEngagements(ctx context.Context, param ListEngagementParams) ([]RepositoryMonthlyEngagement, error) {
-	if err := param.Validate(); err != nil {
+func (rr *RepositoryMonthlyInsightRepo) FindRepositoryMonthlyEngagements(ctx context.Context, params *ListEngagementParams) ([]RepositoryMonthlyEngagement, error) {
+	if err := params.ValidateMetric(); err != nil {
 		return nil, err
 	}
 
@@ -196,28 +240,28 @@ func (rr *RepositoryMonthlyInsightRepo) FindRepositoryMonthlyEngagements(ctx con
 	).
 		From("repository_monthly_insights as ri").
 		Join("repositories as repo ON ri.repository_id = repo.id").
-		OrderBy(fmt.Sprintf("%s DESC", param.Metric))
+		OrderBy(fmt.Sprintf("%s DESC", params.Metric))
 
-	if !param.CreatedAfter.IsZero() {
-		qb = qb.Where("repo.created_at >= ?", param.CreatedAfter.Format(time.DateTime))
+	if !params.CreatedAfter.IsZero() {
+		qb = qb.Where("repo.created_at >= ?", params.CreatedAfter.Format(time.DateTime))
 	}
 
-	if param.Year > 0 && param.Month > 0 {
-		qb = qb.Where("year = ? AND month = ?", param.Year, param.Month)
+	if params.Year > 0 && params.Month > 0 {
+		qb = qb.Where("year = ? AND month = ?", params.Year, params.Month)
 	} else {
 		now := time.Now()
 		thisYear, thisMonth := now.Year(), int(now.Month())
 		qb = qb.Where("year = ? AND month = ?", thisYear, thisMonth)
 	}
 
-	if param.Limit > 0 && param.Limit <= 10 {
-		qb = qb.Limit(uint64(param.Limit))
+	if params.Limit > 0 && params.Limit <= 10 {
+		qb = qb.Limit(uint64(params.Limit))
 	} else {
 		qb = qb.Limit(10)
 	}
 
-	if strings.TrimSpace(param.Language) != "" {
-		qb = qb.Where("repo.language = ?", param.Language)
+	if strings.TrimSpace(params.Language) != "" {
+		qb = qb.Where("repo.language = ?", params.Language)
 	}
 
 	query, args, err := qb.ToSql()

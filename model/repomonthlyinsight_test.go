@@ -11,13 +11,13 @@ func TestListEngagementParamsValidate(t *testing.T) {
 		Metric:   "invalid",
 		Language: "PHP",
 	}
-	assert.Error(t, params.Validate())
+	assert.Error(t, params.ValidateMetric())
 
 	metrics := []string{"stars", "forks", "merged_prs", "issues", "closed_issues"}
 	for _, m := range metrics {
 		t.Run(m, func(t *testing.T) {
 			params.Metric = m
-			assert.NoError(t, params.Validate())
+			assert.NoError(t, params.ValidateMetric())
 		})
 	}
 }
