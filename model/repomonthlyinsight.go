@@ -172,7 +172,28 @@ func (rr *RepositoryMonthlyInsightRepo) Update(ctx context.Context, data Reposit
 }
 
 func (rr *RepositoryMonthlyInsightRepo) FindRepositoryMonthlyEngagements(ctx context.Context, param ListEngagementParams) ([]RepositoryMonthlyEngagement, error) {
-	qb := sq.Select("ri.id, ri.year, ri.month, ri.stars, ri.forks, ri.merged_prs, ri.issues, ri.closed_issues, ri.completed_at, ri.last_ingested_at, ri.repository_id, repo.full_name as repository_name, repo.stars as repository_stars, repo.forks as repository_forks, repo.language as repository_language, repo.created_at as repository_created_at").
+	if err := param.Validate(); err != nil {
+		return nil, err
+	}
+
+	qb := sq.Select(
+		"ri.id",
+		"ri.year",
+		"ri.month",
+		"ri.stars",
+		"ri.forks",
+		"ri.merged_prs",
+		"ri.issues",
+		"ri.closed_issues",
+		"ri.completed_at",
+		"ri.last_ingested_at",
+		"ri.repository_id",
+		"repo.full_name as repository_name",
+		"repo.stars as repository_stars",
+		"repo.forks as repository_forks",
+		"repo.language as repository_language",
+		"repo.created_at as repository_created_at",
+	).
 		From("repository_monthly_insights as ri").
 		Join("repositories as repo ON ri.repository_id = repo.id").
 		OrderBy(fmt.Sprintf("%s DESC", param.Metric))
@@ -200,9 +221,8 @@ func (rr *RepositoryMonthlyInsightRepo) FindRepositoryMonthlyEngagements(ctx con
 	}
 
 	query, args, err := qb.ToSql()
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get SQL when find repo monthly engagements, error: %v", err)
 	}
 
 	rows, err := rr.db.QueryContext(ctx, query, args...)
