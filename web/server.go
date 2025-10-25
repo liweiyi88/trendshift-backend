@@ -28,6 +28,7 @@ type Controllers struct {
 	securityController   *controller.SecurityController
 	statsController      *controller.StatsController
 	searchController     *controller.SearchController
+	engagementController *controller.RepositoryEngagementController
 }
 
 func initControllers(repositories *global.Repositories) *Controllers {
@@ -38,6 +39,7 @@ func initControllers(repositories *global.Repositories) *Controllers {
 		securityController:   controller.NewSecurityController(repositories.UserRepo),
 		statsController:      controller.NewStatsController(repositories.StatsRepo),
 		searchController:     controller.NewSearchController(),
+		engagementController: controller.NewRepositoryEngagementController(repositories.RepositoryMonthlyInsightRepo),
 	}
 }
 
@@ -68,6 +70,7 @@ func setupRouter(ctx context.Context) (*gin.Engine, *sql.DB) {
 	router.GET("/api/developers/:id", controllers.developerController.Get)
 	router.GET("/api/repositories", controllers.repositoryController.List)
 	router.GET("/api/repositories/:id", controllers.repositoryController.Get)
+	router.GET("/api/repositories/engagement/monthly/:metric", controllers.engagementController.List)
 	router.GET("/api/tags", controllers.tagController.List)
 	router.GET("/api/stats/trending-topics", controllers.statsController.GetTrendingTopicsStats)
 
