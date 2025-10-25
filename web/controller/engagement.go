@@ -22,7 +22,8 @@ func NewRepositoryEngagementController(rmr *model.RepositoryMonthlyInsightRepo) 
 
 // Valid query parameter example: ?year=2025&month=10&language=Go&limit=10&created_after=2024-01-02T15:04:05+10:00
 func (controller *RepositoryEngagementController) List(c *gin.Context) {
-	defaultYear, defaultMonth := strconv.Itoa(datetime.StartOfThisMonth().Year()), datetime.StartOfThisMonth().Month().String()
+	ts := datetime.StartOfThisMonth()
+	defaultYear, defaultMonth := strconv.Itoa(ts.Year()), strconv.Itoa(int(ts.Month()))
 
 	yearStr := c.DefaultQuery("year", defaultYear)
 	monthStr := c.DefaultQuery("month", defaultMonth)
