@@ -240,6 +240,7 @@ func (rr *RepositoryMonthlyInsightRepo) FindRepositoryMonthlyEngagements(ctx con
 	).
 		From("repository_monthly_insights as ri").
 		Join("repositories as repo ON ri.repository_id = repo.id").
+		Where("repo.skipped = false").
 		OrderBy(fmt.Sprintf("ri.%s DESC", params.Metric))
 
 	if !params.CreatedAfter.IsZero() {
