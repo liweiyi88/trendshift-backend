@@ -240,7 +240,7 @@ func (rr *RepositoryMonthlyInsightRepo) FindRepositoryMonthlyEngagements(ctx con
 	).
 		From("repository_monthly_insights as ri").
 		Join("repositories as repo ON ri.repository_id = repo.id").
-		OrderBy(fmt.Sprintf("%s DESC", params.Metric))
+		OrderBy(fmt.Sprintf("ri.%s DESC", params.Metric))
 
 	if !params.CreatedAfter.IsZero() {
 		qb = qb.Where("repo.created_at >= ?", params.CreatedAfter.Format(time.DateTime))
