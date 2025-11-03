@@ -19,10 +19,19 @@ type Owner struct {
 	AvatarUrl string `json:"avatar_url"`
 }
 
+type RepositoryWithActivities struct {
+	GhRepository
+	MonthlyActivities []RepositoryMonthlyInsight `json:"monthly_activities"`
+}
+
 type Trending struct {
 	TrendingLanguage dbutils.NullString `json:"trending_language"`
-	TrendDate        string             `json:"trend_date"`
-	Rank             int                `json:"rank"`
+	TrendDate        dbutils.NullString `json:"trend_date"`
+	Rank             dbutils.NullInt64  `json:"rank"`
+}
+
+func (t Trending) IsZero() bool {
+	return !t.TrendingLanguage.Valid && !t.TrendDate.Valid && !t.Rank.Valid
 }
 
 type GhRepository struct {
@@ -81,7 +90,7 @@ func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository,
 
 	qb := dbutils.NewQueryBuilder()
 
-	qb.Query("select repositories.*, trending_repositories.`trend_date`, trending_repositories.`rank`, trending_repositories.`language` as `trending_language` from repositories join trending_repositories on repositories.id = trending_repositories.repository_id")
+	qb.Query("select repositories.*, trending_repositories.`trend_date`, trending_repositories.`rank`, trending_repositories.`language` as `trending_language` from repositories left join trending_repositories on repositories.id = trending_repositories.repository_id")
 	qb.Where("repositories.id = ?", id)
 	query, args := qb.GetQuery()
 
@@ -123,11 +132,17 @@ func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository,
 		}
 
 		if !collectionMap.Has(ghr.Id) {
-			ghr.Trendings = append(ghr.Trendings, trending)
+			if !trending.IsZero() {
+				ghr.Trendings = append(ghr.Trendings, trending)
+			}
+
 			collectionMap.Set(ghr.Id, &ghr)
 		} else {
 			repository := collectionMap.Get(ghr.Id)
-			repository.Trendings = append(repository.Trendings, trending)
+
+			if !trending.IsZero() {
+				repository.Trendings = append(repository.Trendings, trending)
+			}
 		}
 	}
 

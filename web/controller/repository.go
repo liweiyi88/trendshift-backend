@@ -16,6 +16,7 @@ import (
 
 type RepositoryController struct {
 	grr *model.GhRepositoryRepo
+	rr  *model.RepositoryMonthlyInsightRepo
 }
 
 type AttachTagsRequest struct {
@@ -23,9 +24,10 @@ type AttachTagsRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
-func NewRepositoryController(grr *model.GhRepositoryRepo) *RepositoryController {
+func NewRepositoryController(grr *model.GhRepositoryRepo, rr *model.RepositoryMonthlyInsightRepo) *RepositoryController {
 	return &RepositoryController{
 		grr,
+		rr,
 	}
 }
 
@@ -105,7 +107,19 @@ func (rc *RepositoryController) Get(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, repository)
+	activities, err := rc.rr.FindByRepositoryId(c, id)
+	if err != nil {
+		slog.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Error"})
+		return
+	}
+
+	response := model.RepositoryWithActivities{
+		GhRepository:      repository,
+		MonthlyActivities: activities,
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (rc *RepositoryController) SaveTags(c *gin.Context) {
