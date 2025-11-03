@@ -215,6 +215,74 @@ func (rr *RepositoryMonthlyInsightRepo) Update(ctx context.Context, data Reposit
 	return nil
 }
 
+func (rr *RepositoryMonthlyInsightRepo) FindByRepositoryId(ctx context.Context, repositoryId int) ([]RepositoryMonthlyInsight, error) {
+	qb := sq.Select(
+		"ri.id",
+		"ri.year",
+		"ri.month",
+		"ri.stars",
+		"ri.forks",
+		"ri.merged_prs",
+		"ri.issues",
+		"ri.closed_issues",
+		"ri.completed_at",
+		"ri.last_ingested_at",
+		"ri.created_at",
+		"ri.updated_at",
+		"ri.repository_id",
+	).
+		From("repository_monthly_insights as ri").
+		Where("ri.repository_id = ?", repositoryId).
+		OrderBy("ri.year DESC, ri.month DESC")
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get SQL when find repo monthly insights by repository id, error: %v", err)
+	}
+
+	rows, err := rr.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find repository monthly insights, error: %v", err)
+	}
+
+	defer func() {
+		if err := rows.Close(); err != nil {
+			slog.Error("failed to close rows", slog.Any("error", err), slog.String("action", "repositoryMonthlyInsightRepo.FindByRepositoryId"))
+		}
+	}()
+
+	data := make([]RepositoryMonthlyInsight, 0)
+
+	for rows.Next() {
+		var insight RepositoryMonthlyInsight
+
+		if err := rows.Scan(
+			&insight.Id,
+			&insight.Year,
+			&insight.Month,
+			&insight.Stars,
+			&insight.Forks,
+			&insight.MergedPrs,
+			&insight.Issues,
+			&insight.ClosedIssues,
+			&insight.CompletedAt,
+			&insight.LastIngestedAt,
+			&insight.CreatedAt,
+			&insight.UpdatedAt,
+			&insight.RepositoryId); err != nil {
+			return nil, fmt.Errorf("failed to scan repository_monthly_insights table, error: %v", err)
+		}
+
+		data = append(data, insight)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("repositoryMonthlyInsightRepo.FindByRepositoryId, rows error: %v", err)
+	}
+
+	return data, nil
+}
+
 func (rr *RepositoryMonthlyInsightRepo) FindRepositoryMonthlyEngagements(ctx context.Context, params *ListEngagementParams) ([]RepositoryMonthlyEngagement, error) {
 	if err := params.ValidateMetric(); err != nil {
 		return nil, err

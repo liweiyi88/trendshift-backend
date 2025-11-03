@@ -117,7 +117,7 @@ func (dr *DeveloperRepo) FindAll(ctx context.Context, opts ...any) ([]Developer,
 
 func (dr *DeveloperRepo) FindById(ctx context.Context, id int) (Developer, error) {
 	qb := dbutils.NewQueryBuilder()
-	qb.Query("select developers.*, trending_developers.`trend_date`, trending_developers.`rank`, trending_developers.`language` as `trending_language` from developers join trending_developers on developers.id = trending_developers.developer_id")
+	qb.Query("select developers.*, trending_developers.`trend_date`, trending_developers.`rank`, trending_developers.`language` as `trending_language` from developers left join trending_developers on developers.id = trending_developers.developer_id")
 	qb.Where("developers.id = ?", id)
 	query, args := qb.GetQuery()
 
@@ -163,11 +163,18 @@ func (dr *DeveloperRepo) FindById(ctx context.Context, id int) (Developer, error
 		}
 
 		if !collectionMap.Has(developer.Id) {
-			developer.Trendings = append(developer.Trendings, trending)
+			if !trending.IsZero() {
+				developer.Trendings = append(developer.Trendings, trending)
+			}
+
 			collectionMap.Set(developer.Id, &developer)
 		} else {
 			developer := collectionMap.Get(developer.Id)
-			developer.Trendings = append(developer.Trendings, trending)
+
+			if !trending.IsZero() {
+				developer.Trendings = append(developer.Trendings, trending)
+			}
+
 		}
 	}
 
