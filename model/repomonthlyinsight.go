@@ -227,10 +227,12 @@ func (rr *RepositoryMonthlyInsightRepo) FindByRepositoryId(ctx context.Context, 
 		"ri.closed_issues",
 		"ri.completed_at",
 		"ri.last_ingested_at",
+		"ri.created_at",
+		"ri.updated_at",
 		"ri.repository_id",
 	).
 		From("repository_monthly_insights as ri").
-		Where("ri.repository_id =?", repositoryId).
+		Where("ri.repository_id = ?", repositoryId).
 		OrderBy("ri.year DESC, ri.month DESC")
 
 	query, args, err := qb.ToSql()
@@ -265,15 +267,17 @@ func (rr *RepositoryMonthlyInsightRepo) FindByRepositoryId(ctx context.Context, 
 			&insight.ClosedIssues,
 			&insight.CompletedAt,
 			&insight.LastIngestedAt,
+			&insight.CreatedAt,
+			&insight.UpdatedAt,
 			&insight.RepositoryId); err != nil {
-			return nil, fmt.Errorf("failed to scan FindByRepositoryId table, error: %v", err)
+			return nil, fmt.Errorf("failed to scan repository_monthly_insights table, error: %v", err)
 		}
 
 		data = append(data, insight)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("repositoryMonthlyInsightRepo.FindRepositoryMonthlyEngagements, rows error: %v", err)
+		return nil, fmt.Errorf("repositoryMonthlyInsightRepo.FindByRepositoryId, rows error: %v", err)
 	}
 
 	return data, nil
