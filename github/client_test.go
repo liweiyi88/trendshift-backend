@@ -5,7 +5,14 @@ import (
 	"testing"
 
 	"github.com/liweiyi88/trendshift-backend/model"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestParseNextLink(t *testing.T) {
+	nextlink := parseNextLink(`<https://api.github.com/repositories/90194616/commits?per_page=1&page=2>; rel="next", <https://api.github.com/repositories/90194616/commits?per_page=1&page=5282>; rel="last"`)
+	assert.Equal(t, "https://api.github.com/repositories/90194616/commits?per_page=1&page=2", nextlink)
+	assert.Empty(t, parseNextLink(""))
+}
 
 func TestGetDeveloper(t *testing.T) {
 	client := NewClient(NewTokenPool([]string{}, WithAllowEmptytoken(true)))

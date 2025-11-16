@@ -102,7 +102,6 @@ func NewGhRepositoryRepo(db database.DB) *GhRepositoryRepo {
 }
 
 func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository, error) {
-
 	qb := dbutils.NewQueryBuilder()
 
 	qb.Query("select repositories.*, trending_repositories.`trend_date`, trending_repositories.`rank`, trending_repositories.`language` as `trending_language` from repositories left join trending_repositories on repositories.id = trending_repositories.repository_id")
@@ -139,6 +138,11 @@ func (gr *GhRepositoryRepo) FindById(ctx context.Context, id int) (GhRepository,
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
 			&ghr.Skipped,
+			&ghr.NumberOfContributors,
+			&ghr.LastCommitAt,
+			&ghr.LastUserCommitAt,
+			&ghr.License.Key,
+			&ghr.License.Name,
 			&trending.TrendDate,
 			&trending.Rank,
 			&trending.TrendingLanguage,
@@ -190,6 +194,11 @@ func (gr *GhRepositoryRepo) FindByName(ctx context.Context, name string) (GhRepo
 		&ghr.DefaultBranch,
 		&ghr.Homepage,
 		&ghr.Skipped,
+		&ghr.NumberOfContributors,
+		&ghr.LastCommitAt,
+		&ghr.LastUserCommitAt,
+		&ghr.License.Key,
+		&ghr.License.Name,
 	); err != nil {
 		return ghr, err
 	}
@@ -308,6 +317,11 @@ func (gr *GhRepositoryRepo) FindAllWithTags(ctx context.Context, filter string) 
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
 			&ghr.Skipped,
+			&ghr.NumberOfContributors,
+			&ghr.LastCommitAt,
+			&ghr.LastUserCommitAt,
+			&ghr.License.Key,
+			&ghr.License.Name,
 			&tagId,
 			&tagName,
 		); err != nil {
@@ -395,6 +409,11 @@ func (gr *GhRepositoryRepo) FindTrendingRepositories(ctx context.Context, opts .
 			&trr.DefaultBranch,
 			&trr.Homepage,
 			&trr.Skipped,
+			&trr.NumberOfContributors,
+			&trr.LastCommitAt,
+			&trr.LastUserCommitAt,
+			&trr.License.Key,
+			&trr.License.Name,
 			&trr.FeaturedCount,
 			&trr.BestRanking,
 		); err != nil {
@@ -446,6 +465,11 @@ func (gr *GhRepositoryRepo) FindRepositoriesByNames(ctx context.Context, names [
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
 			&ghr.Skipped,
+			&ghr.NumberOfContributors,
+			&ghr.LastCommitAt,
+			&ghr.LastUserCommitAt,
+			&ghr.License.Key,
+			&ghr.License.Name,
 		); err != nil {
 			return ghRepos, err
 		}

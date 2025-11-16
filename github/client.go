@@ -63,17 +63,6 @@ type Issue struct {
 	CreatedAt time.Time
 }
 
-type PageInfo struct {
-	EndCursor   string `json:"endCursor"`
-	HasNextPage bool   `json:"hasNextPage"`
-}
-
-type UserEdge struct {
-	Node struct {
-		Login string `json:"login"`
-	} `json:"node"`
-}
-
 type GraphQLResponse struct {
 	Data struct {
 		Repository struct {
