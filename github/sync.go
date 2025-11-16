@@ -5,14 +5,49 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/gocolly/colly/v2"
 	"github.com/liweiyi88/trendshift-backend/model"
+	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
 	"github.com/liweiyi88/trendshift-backend/utils/sliceutils"
 	"golang.org/x/sync/errgroup"
 )
 
 const chulkSize = 200
+
+func fetchTotalContributors(fullName string) int {
+	url := fmt.Sprintf("https://github.com/%s", fullName)
+	c := colly.NewCollector()
+
+	count := 0
+	regex := regexp.MustCompile(`[\d,]+`)
+
+	c.OnHTML(".Layout-sidebar .BorderGrid-cell a[href*='graphs/contributors']", func(e *colly.HTMLElement) {
+		text := strings.TrimSpace(e.Text)
+
+		match := regex.FindString(text)
+		if match == "" {
+			slog.Warn("no contributor number found", slog.String("repo", fullName), slog.String("text", text))
+			return
+		}
+
+		clean := strings.ReplaceAll(match, ",", "")
+		num, err := strconv.Atoi(clean)
+		if err != nil {
+			slog.Error("failed to parse contributors number", slog.String("repo", fullName), slog.String("data", clean), slog.Any("error", err))
+			return
+		}
+
+		count = num
+	})
+
+	c.Visit(url)
+	return count
+}
 
 type SyncHandler struct {
 	repositoryRepo *model.GhRepositoryRepo
@@ -51,6 +86,11 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 				return fmt.Errorf("failed to get repository details from GitHub: %v", err)
 			}
 
+			lastCommit, lastUserCommit, err := s.client.GetLastCommit(ctx, repository.FullName)
+			if err != nil {
+				return fmt.Errorf("failed to get last commit from GitHub API, repo: %s, error: %v", repository.FullName, err)
+			}
+
 			repository.Skipped = false
 			repository.Description = ghRepository.Description
 			repository.Forks = ghRepository.Forks
@@ -59,6 +99,21 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 			repository.Language = ghRepository.Language // Language can also be updated
 			repository.DefaultBranch = ghRepository.DefaultBranch
 			repository.Homepage = ghRepository.Homepage
+
+			totalContributors := fetchTotalContributors(repository.FullName)
+			if totalContributors > 0 {
+				repository.NumberOfContributors = dbutils.NewNullInt64(totalContributors)
+			}
+
+			if lastCommit != nil {
+				repository.LastCommitAt = dbutils.NewNullTime(*lastCommit)
+			}
+
+			if lastUserCommit != nil {
+				repository.LastUserCommitAt = dbutils.NewNullTime(*lastUserCommit)
+			}
+
+			repository.License = ghRepository.License
 			repository.CreatedAt = ghRepository.CreatedAt
 
 			return s.repositoryRepo.Update(ctx, repository)

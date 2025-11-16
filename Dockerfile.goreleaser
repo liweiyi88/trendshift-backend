@@ -1,3 +1,4 @@
-FROM alpine:3.18.3
+FROM alpine:latest
+RUN apk update && apk upgrade
 COPY trendshift-backend /usr/local/bin/
 ENTRYPOINT ["/usr/local/bin/trendshift-backend"]

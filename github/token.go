@@ -65,8 +65,15 @@ func (tp *TokenPool) Update(token string, remaining int, resetAt time.Time) {
 
 	for _, t := range tp.tokens {
 		if t.token == token {
-			t.remaining = remaining
-			t.resetAt = resetAt
+			// New rate-limit window: reset counters from GitHub headers.
+			if resetAt.After(t.resetAt) {
+				t.remaining = remaining
+				t.resetAt = resetAt
+			} else if resetAt.Equal(t.resetAt) && remaining < t.remaining {
+				// Within the same window, keep the most conservative value.
+				t.remaining = remaining
+			}
+
 			return
 		}
 	}
