@@ -105,8 +105,14 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 				repository.NumberOfContributors = dbutils.NewNullInt64(totalContributors)
 			}
 
-			repository.LastCommitAt = dbutils.NewNullTime(*lastCommit)
-			repository.LastUserCommitAt = dbutils.NewNullTime(*lastUserCommit)
+			if lastCommit != nil {
+				repository.LastCommitAt = dbutils.NewNullTime(*lastCommit)
+			}
+
+			if lastUserCommit != nil {
+				repository.LastUserCommitAt = dbutils.NewNullTime(*lastUserCommit)
+			}
+
 			repository.License = ghRepository.License
 			repository.CreatedAt = ghRepository.CreatedAt
 

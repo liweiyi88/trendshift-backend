@@ -694,7 +694,7 @@ func (ghClient *Client) GetLastCommit(ctx context.Context, fullName string) (*ti
 			}
 		}
 
-		err = checkGitHubResponse(res, body, "github graphql")
+		err = checkGitHubResponse(res, body, "get last commit")
 		if err != nil {
 			return nil, nil, err
 		}

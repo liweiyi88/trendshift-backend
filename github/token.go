@@ -69,7 +69,7 @@ func (tp *TokenPool) Update(token string, remaining int, resetAt time.Time) {
 			if resetAt.After(t.resetAt) {
 				t.remaining = remaining
 				t.resetAt = resetAt
-			} else if remaining < t.remaining {
+			} else if resetAt.Equal(t.resetAt) && remaining < t.remaining {
 				// Within the same window, keep the most conservative value.
 				t.remaining = remaining
 			}
