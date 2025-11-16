@@ -678,13 +678,16 @@ func (ghClient *Client) GetLastCommit(ctx context.Context, fullName string) (*ti
 			return nil, nil, fmt.Errorf("failed to send request: %w", err)
 		}
 
-		body, err := io.ReadAll(res.Body)
-
 		defer func() {
 			if err := res.Body.Close(); err != nil {
 				slog.Any("failed to close response body when fetch repository:", err)
 			}
 		}()
+
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read response body: %v", err)
+		}
 
 		var commits []CommitResponse
 
