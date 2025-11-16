@@ -689,6 +689,11 @@ func (ghClient *Client) GetLastCommit(ctx context.Context, fullName string) (*ti
 			return nil, nil, fmt.Errorf("failed to read response body: %v", err)
 		}
 
+		err = checkGitHubResponse(res, body, "github graphql")
+		if err != nil {
+			return nil, nil, err
+		}
+
 		var commits []CommitResponse
 
 		if err := json.Unmarshal(body, &commits); err != nil {
