@@ -28,6 +28,22 @@ type Stargazer struct {
 	Login     string
 }
 
+type CommitResponse struct {
+	Sha    string `json:"sha"`
+	Commit Commit `json:"commit"`
+	Author struct {
+		UserType string `json:"type"`
+	}
+}
+
+type Commit struct {
+	Author struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+		Date  string `json:"date"`
+	} `json:"author"`
+}
+
 type Fork struct {
 	CreatedAt time.Time
 	Login     string
@@ -45,6 +61,17 @@ type Issue struct {
 	Closed    bool
 	ClosedAt  time.Time
 	CreatedAt time.Time
+}
+
+type PageInfo struct {
+	EndCursor   string `json:"endCursor"`
+	HasNextPage bool   `json:"hasNextPage"`
+}
+
+type UserEdge struct {
+	Node struct {
+		Login string `json:"login"`
+	} `json:"node"`
 }
 
 type GraphQLResponse struct {
@@ -606,6 +633,102 @@ func (ghClient *Client) GetDeveloper(ctx context.Context, username string) (mode
 	}
 
 	return developer, checkGitHubResponse(res, body, "developer")
+}
+
+func parseNextLink(linkHeader string) string {
+	if linkHeader == "" {
+		return ""
+	}
+
+	parts := strings.Split(linkHeader, ",")
+	for _, p := range parts {
+		section := strings.Split(strings.TrimSpace(p), ";")
+		if len(section) < 2 {
+			continue
+		}
+
+		urlPart := strings.Trim(section[0], "<>")
+		relPart := strings.TrimSpace(section[1])
+
+		if relPart == `rel="next"` {
+			return urlPart
+		}
+	}
+
+	return ""
+}
+
+func (ghClient *Client) GetLastCommit(ctx context.Context, fullName string) (*time.Time, *time.Time, error) {
+	const baseURL = "https://api.github.com/repos"
+
+	var lastCommitDate *time.Time
+	var lastUserCommitDate *time.Time
+
+	url := fmt.Sprintf("%s/%s/commits?per_page=100", baseURL, fullName)
+
+	client := &http.Client{}
+
+	for url != "" {
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		token, err := ghClient.TokenPool.GetToken()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		req.Header.Set("Accept", "application/vnd.github+json")
+		if strings.TrimSpace(token) != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to send request: %w", err)
+		}
+
+		body, err := io.ReadAll(res.Body)
+		res.Body.Close()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		var commits []CommitResponse
+		if err := json.Unmarshal(body, &commits); err != nil {
+			return nil, nil, fmt.Errorf("failed to decode commits: %w", err)
+		}
+
+		if len(commits) == 0 {
+			break // no more commits
+		}
+
+		// Set lastCommitDate from first commit in first page
+		if lastCommitDate == nil {
+			t, err := time.Parse(time.RFC3339, commits[0].Commit.Author.Date)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to parse last commit date: %w", err)
+			}
+			lastCommitDate = &t
+		}
+
+		// Look for the last user commit
+		for _, c := range commits {
+			if c.Author.UserType != "Bot" {
+				t, err := time.Parse(time.RFC3339, c.Commit.Author.Date)
+				if err != nil {
+					return nil, nil, fmt.Errorf("failed to parse last user commit date: %w", err)
+				}
+
+				return lastCommitDate, &t, nil
+			}
+		}
+
+		url = parseNextLink(res.Header.Get("Link"))
+	}
+
+	return lastCommitDate, lastUserCommitDate, nil
 }
 
 func (ghClient *Client) GetRepository(ctx context.Context, fullName string) (model.GhRepository, error) {

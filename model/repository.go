@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/liweiyi88/trendshift-backend/database"
 	"github.com/liweiyi88/trendshift-backend/model/opt"
 	"github.com/liweiyi88/trendshift-backend/utils/dbutils"
@@ -17,6 +18,14 @@ const maxDescriptionLength = 900
 type Owner struct {
 	Name      string `json:"login"`
 	AvatarUrl string `json:"avatar_url"`
+}
+
+type License struct {
+	Key    dbutils.NullString `json:"key"`
+	Name   dbutils.NullString `json:"name"`
+	SpdxId string             `json:"spdx_id"`
+	Url    string             `json:"url"`
+	NodeId string             `json:"node_id"`
 }
 
 type RepositoryWithActivities struct {
@@ -35,21 +44,27 @@ func (t Trending) IsZero() bool {
 }
 
 type GhRepository struct {
-	Id            int                `json:"repository_id"` // primary key saved in DB.
-	GhrId         int                `json:"id"`            // id from github repository api response.
-	FullName      string             `json:"full_name"`
-	Owner         Owner              `json:"owner"`
-	Forks         int                `json:"forks"`
-	Stars         int                `json:"watchers"`
-	Language      string             `json:"language"`
-	Description   dbutils.NullString `json:"description"`
-	DefaultBranch dbutils.NullString `json:"default_branch"`
-	Homepage      dbutils.NullString `json:"homepage"`
-	Skipped       bool               `json:"skipped"`
-	Tags          []Tag              `json:"tags"`
-	Trendings     []Trending         `json:"trendings"`
-	CreatedAt     time.Time          `json:"created_at"` // It is the datetime the repository was created on GitHub.
-	UpdatedAt     time.Time          `json:"updated_at"` // It is the datetime we update the DB record, not when repository info updated on GitHub
+	Id                   int                `json:"repository_id"` // primary key saved in DB.
+	GhrId                int                `json:"id"`            // id from github repository api response.
+	FullName             string             `json:"full_name"`
+	Owner                Owner              `json:"owner"`
+	Forks                int                `json:"forks"`
+	Stars                int                `json:"watchers"`
+	Language             string             `json:"language"`
+	Description          dbutils.NullString `json:"description"`
+	DefaultBranch        dbutils.NullString `json:"default_branch"`
+	Homepage             dbutils.NullString `json:"homepage"`
+	Skipped              bool               `json:"skipped"`
+	NumberOfContributors dbutils.NullInt64
+	LastCommitAt         dbutils.NullTime
+	LastUserCommitAt     dbutils.NullTime
+	License              License `json:"license"`
+	LicenseKey           string
+	LicenseName          string
+	Tags                 []Tag      `json:"tags"`
+	Trendings            []Trending `json:"trendings"`
+	CreatedAt            time.Time  `json:"created_at"` // It is the datetime the repository was created on GitHub.
+	UpdatedAt            time.Time  `json:"updated_at"` // It is the datetime we update the DB record, not when repository info updated on GitHub
 }
 
 func (gr GhRepository) GetDescription() string {
@@ -234,6 +249,11 @@ func (gr *GhRepositoryRepo) FindAll(ctx context.Context, opts ...any) ([]GhRepos
 			&ghr.DefaultBranch,
 			&ghr.Homepage,
 			&ghr.Skipped,
+			&ghr.NumberOfContributors,
+			&ghr.LastCommitAt,
+			&ghr.LastUserCommitAt,
+			&ghr.License.Key,
+			&ghr.License.Name,
 		); err != nil {
 			return nil, err
 		}
@@ -482,30 +502,40 @@ func (gr *GhRepositoryRepo) Save(ctx context.Context, ghRepo GhRepository) (int6
 }
 
 func (gr *GhRepositoryRepo) Update(ctx context.Context, ghRepo GhRepository) error {
-	query := "UPDATE `repositories` SET full_name = ?, ghr_id = ?, stars = ?, forks = ?, language = ?, owner = ?, owner_avatar_url = ?, description = ?, default_branch = ?, homepage = ?, skipped = ?, created_at = ?, updated_at = ? WHERE id = ?"
-
 	updatedAt := time.Now()
+
+	builder := sq.Update("repositories").
+		Set("full_name", ghRepo.FullName).
+		Set("ghr_id", ghRepo.GhrId).
+		Set("stars", ghRepo.Stars).
+		Set("forks", ghRepo.Forks).
+		Set("language", ghRepo.Language).
+		Set("owner", ghRepo.Owner.Name).
+		Set("owner_avatar_url", ghRepo.Owner.AvatarUrl).
+		Set("description", ghRepo.Description).
+		Set("default_branch", ghRepo.DefaultBranch).
+		Set("homepage", ghRepo.Homepage).
+		Set("skipped", ghRepo.Skipped).
+		Set("number_of_contributors", ghRepo.NumberOfContributors).
+		Set("last_commit_at", ghRepo.LastCommitAt).
+		Set("last_user_commit_at", ghRepo.LastUserCommitAt).
+		Set("license_key", ghRepo.License.Key).
+		Set("license_name", ghRepo.License.Name).
+		Set("created_at", ghRepo.CreatedAt.Format(time.DateTime)).
+		Set("updated_at", updatedAt.Format(time.DateTime)).Where(sq.Eq{"id": ghRepo.Id})
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build SQL to update repository: %w", err)
+	}
 
 	result, err := gr.db.ExecContext(
 		ctx,
 		query,
-		ghRepo.FullName,
-		ghRepo.GhrId,
-		ghRepo.Stars,
-		ghRepo.Forks,
-		ghRepo.Language,
-		ghRepo.Owner.Name,
-		ghRepo.Owner.AvatarUrl,
-		ghRepo.GetDescription(),
-		ghRepo.DefaultBranch,
-		ghRepo.Homepage,
-		ghRepo.Skipped,
-		ghRepo.CreatedAt.Format(time.DateTime),
-		updatedAt.Format(time.DateTime),
-		ghRepo.Id)
+		args...)
 
 	if err != nil {
-		return fmt.Errorf("failed to run repositories update query, gh repo id: %d, error: %v", ghRepo.Id, err)
+		return fmt.Errorf("failed to run repositories update query, gh repo: %s, error: %v", ghRepo.FullName, err)
 	}
 
 	n, err := result.RowsAffected()

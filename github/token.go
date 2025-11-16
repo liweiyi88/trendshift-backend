@@ -65,7 +65,10 @@ func (tp *TokenPool) Update(token string, remaining int, resetAt time.Time) {
 
 	for _, t := range tp.tokens {
 		if t.token == token {
-			t.remaining = remaining
+			if remaining < t.remaining {
+				t.remaining = remaining
+			}
+
 			t.resetAt = resetAt
 			return
 		}
