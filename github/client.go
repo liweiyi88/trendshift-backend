@@ -679,18 +679,21 @@ func (ghClient *Client) GetLastCommit(ctx context.Context, fullName string) (*ti
 		}
 
 		body, err := io.ReadAll(res.Body)
-		res.Body.Close()
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to read response body: %w", err)
-		}
+
+		defer func() {
+			if err := res.Body.Close(); err != nil {
+				slog.Any("failed to close response body when fetch repository:", err)
+			}
+		}()
 
 		var commits []CommitResponse
+
 		if err := json.Unmarshal(body, &commits); err != nil {
 			return nil, nil, fmt.Errorf("failed to decode commits: %w", err)
 		}
 
 		if len(commits) == 0 {
-			break // no more commits
+			break
 		}
 
 		// Set lastCommitDate from first commit in first page
