@@ -19,16 +19,17 @@ import (
 
 const chulkSize = 200
 
-func fetchtotalCollaboarators(fullName string) int {
+func fetchTotalContributors(fullName string) int {
 	url := fmt.Sprintf("https://github.com/%s", fullName)
 	c := colly.NewCollector()
 
 	count := 0
+	regex := regexp.MustCompile(`[\d,]+`)
 
 	c.OnHTML(".Layout-sidebar .BorderGrid-cell a[href*='graphs/contributors']", func(e *colly.HTMLElement) {
 		text := strings.TrimSpace(e.Text)
-		re := regexp.MustCompile(`[\d,]+`)
-		match := re.FindString(text)
+
+		match := regex.FindString(text)
 		if match == "" {
 			slog.Warn("no contributor number found", slog.String("repo", fullName), slog.String("text", text))
 			return
@@ -99,7 +100,7 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 			repository.DefaultBranch = ghRepository.DefaultBranch
 			repository.Homepage = ghRepository.Homepage
 
-			totalContributors := fetchtotalCollaboarators(repository.FullName)
+			totalContributors := fetchTotalContributors(repository.FullName)
 			if totalContributors > 0 {
 				repository.NumberOfContributors = dbutils.NewNullInt64(totalContributors)
 			}

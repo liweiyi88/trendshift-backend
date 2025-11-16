@@ -678,15 +678,20 @@ func (ghClient *Client) GetLastCommit(ctx context.Context, fullName string) (*ti
 			return nil, nil, fmt.Errorf("failed to send request: %w", err)
 		}
 
-		defer func() {
-			if err := res.Body.Close(); err != nil {
-				slog.Any("failed to close response body when fetch repository:", err)
-			}
-		}()
-
 		body, err := io.ReadAll(res.Body)
+		// Do not wrap it with defer as this is inside a loop
+		if cerr := res.Body.Close(); cerr != nil {
+			slog.Error("failed to close response body when fetch last commit", slog.Any("error", cerr))
+		}
+
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to read response body: %v", err)
+		}
+
+		if strings.TrimSpace(token) != "" {
+			if err := syncRateLimitData(token, ghClient.TokenPool, res); err != nil {
+				return nil, nil, fmt.Errorf("[github get last commit] sync rate limit data error: %w", err)
+			}
 		}
 
 		err = checkGitHubResponse(res, body, "github graphql")
