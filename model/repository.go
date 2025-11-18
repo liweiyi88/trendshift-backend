@@ -55,16 +55,16 @@ type GhRepository struct {
 	DefaultBranch        dbutils.NullString `json:"default_branch"`
 	Homepage             dbutils.NullString `json:"homepage"`
 	Skipped              bool               `json:"skipped"`
-	NumberOfContributors dbutils.NullInt64
-	LastCommitAt         dbutils.NullTime
-	LastUserCommitAt     dbutils.NullTime
-	License              License `json:"license"`
-	LicenseKey           string
-	LicenseName          string
-	Tags                 []Tag      `json:"tags"`
-	Trendings            []Trending `json:"trendings"`
-	CreatedAt            time.Time  `json:"created_at"` // It is the datetime the repository was created on GitHub.
-	UpdatedAt            time.Time  `json:"updated_at"` // It is the datetime we update the DB record, not when repository info updated on GitHub
+	NumberOfContributors dbutils.NullInt64  `json:"number_of_contributors"`
+	LastCommitAt         dbutils.NullTime   `json:"last_commit_at"`
+	LastUserCommitAt     dbutils.NullTime   `json:"last_user_commit_at"`
+	License              License            `json:"license"`
+	LicenseKey           string             `json:"license_key"`
+	LicenseName          string             `json:"license_name"`
+	Tags                 []Tag              `json:"tags"`
+	Trendings            []Trending         `json:"trendings"`
+	CreatedAt            time.Time          `json:"created_at"` // It is the datetime the repository was created on GitHub.
+	UpdatedAt            time.Time          `json:"updated_at"` // It is the datetime we update the DB record, not when repository info updated on GitHub
 }
 
 func (gr GhRepository) GetDescription() string {
