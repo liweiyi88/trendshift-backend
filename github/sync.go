@@ -26,7 +26,7 @@ func fetchTotalContributors(fullName string) int {
 	count := 0
 	regex := regexp.MustCompile(`[\d,]+`)
 
-	c.OnHTML(".Layout-sidebar .BorderGrid-cell a[href*='graphs/contributors']", func(e *colly.HTMLElement) {
+	c.OnHTML(".Layout-sidebar .BorderGrid-cell a[href*='graphs/contributors'] span", func(e *colly.HTMLElement) {
 		text := strings.TrimSpace(e.Text)
 
 		match := regex.FindString(text)
