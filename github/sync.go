@@ -100,11 +100,6 @@ func (s *SyncHandler) updateRepositories(ctx context.Context, repositories []mod
 			repository.DefaultBranch = ghRepository.DefaultBranch
 			repository.Homepage = ghRepository.Homepage
 
-			totalContributors := fetchTotalContributors(repository.FullName)
-			if totalContributors > 0 {
-				repository.NumberOfContributors = dbutils.NewNullInt64(totalContributors)
-			}
-
 			if lastCommit != nil {
 				repository.LastCommitAt = dbutils.NewNullTime(*lastCommit)
 			}
